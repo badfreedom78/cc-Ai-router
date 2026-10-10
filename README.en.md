@@ -2,6 +2,10 @@
 
 [中文](README.md) ｜ **English**
 
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)
+![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)
+
 Put **Claude Code** on top of multiple LLM APIs and let it **pick the right model tier for each task automatically** — and when one API fails or hits its quota, **automatically switch** to a backup model in the same tier so your work never stops.
 
 - **Lightweight**: a pure-standard-library rule classifier means most requests **never call the router model at all**. No background threads, ~0 idle CPU.

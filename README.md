@@ -2,6 +2,10 @@
 
 **中文** ｜ [English](README.en.md)
 
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)
+![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)
+
 把 **Claude Code** 接到多个大模型 API 之上，按任务难度**自动选择合适档位的模型**，
 并在某个 API 失效 / 限额时**自动切换**到同档位的备用模型，让工作不中断。
 
