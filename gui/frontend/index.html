@@ -1,0 +1,2964 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Router 控制台</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-elev: #161a23;
+    --bg-elev2: #1c212c;
+    --border: #2a3140;
+    --border-soft: #222836;
+    --text: #e6e9ef;
+    --text-dim: #9aa4b6;
+    --text-faint: #667085;
+    --accent: #4f8cff;
+    --accent-dim: #2d5ba8;
+    --ok: #35c26b;
+    --warn: #e5a13a;
+    --err: #ef5350;
+    --purple: #a97bff;
+    --mono: "Cascadia Code", "JetBrains Mono", Consolas, "Courier New", monospace;
+    --sans: "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    overflow: hidden;
+  }
+
+  body { display: flex; flex-direction: column; }
+
+  /* ---------------- 顶栏 ---------------- */
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 18px;
+    height: 54px;
+    background: var(--bg-elev);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: .2px;
+    white-space: nowrap;
+  }
+
+  .brand .dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+  }
+
+  .brand small {
+    color: var(--text-faint);
+    font-weight: 400;
+    font-size: 11px;
+  }
+
+  .svc-pills { display: flex; gap: 8px; margin-left: 6px; }
+
+  .pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: var(--bg-elev2);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+    user-select: none;
+  }
+
+  .pill:hover { border-color: var(--accent-dim); color: var(--text); }
+
+  .pill .led {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-faint);
+    flex-shrink: 0;
+  }
+
+  .pill.up .led { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .pill.down .led { background: var(--err); }
+  .pill.up { color: var(--text); }
+  .pill.warn .led { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
+
+  .topbar .spacer { flex: 1; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--bg-elev2);
+    color: var(--text);
+    font-size: 12.5px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, opacity .15s;
+    white-space: nowrap;
+  }
+
+  .btn:hover:not(:disabled) { background: #232a38; border-color: var(--accent-dim); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 500;
+  }
+  .btn.primary:hover:not(:disabled) { background: #3d7ef0; border-color: #3d7ef0; }
+
+  .btn.danger { border-color: #5a2b2b; color: #ff8b86; }
+  .btn.danger:hover:not(:disabled) { background: #3a1f1f; border-color: #7a3b3b; }
+
+  .btn.ghost { background: transparent; }
+
+  .btn.sm { padding: 4px 9px; font-size: 11.5px; }
+
+  /* ---------------- 标签栏 ---------------- */
+
+  .tabs {
+    display: flex;
+    gap: 2px;
+    padding: 0 18px;
+    background: var(--bg-elev);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .tab {
+    position: relative;
+    padding: 11px 18px 10px;
+    font-size: 13px;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color .15s, border-color .15s;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .tab:hover { color: var(--text); }
+
+  .tab.active {
+    color: var(--text);
+    border-bottom-color: var(--accent);
+  }
+
+  .tab .led {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--text-faint);
+  }
+  .tab.up .led { background: var(--ok); box-shadow: 0 0 7px var(--ok); }
+
+  .tab .badge {
+    font-size: 10.5px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--bg-elev2);
+    border: 1px solid var(--border);
+    color: var(--text-faint);
+  }
+
+  /* ---------------- 面板 ---------------- */
+
+  .panels { flex: 1; position: relative; overflow: hidden; }
+
+  .panel {
+    position: absolute;
+    inset: 0;
+    display: none;
+    overflow: hidden;
+  }
+  .panel.active { display: flex; }
+
+  /* ---------------- 日志面板 ---------------- */
+
+  .log-panel { flex-direction: column; }
+
+  .log-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--bg-elev);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  .log-toolbar .meta {
+    display: flex;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-right: auto;
+    flex-wrap: wrap;
+  }
+
+  .log-toolbar .meta b { color: var(--text); font-weight: 500; }
+  .log-toolbar .meta .k { color: var(--text-faint); }
+
+  .search {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 12px;
+    font-family: inherit;
+    width: 168px;
+  }
+  .search:focus { outline: none; border-color: var(--accent-dim); }
+
+  .svc-error {
+    display: none;
+    padding: 7px 16px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.5;
+    color: #ff7b72;
+    background: rgba(255, 123, 114, 0.08);
+    border-top: 1px solid rgba(255, 123, 114, 0.22);
+    border-bottom: 1px solid rgba(255, 123, 114, 0.22);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .log-view {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 0 18px;
+    background: #0b0d12;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.62;
+  }
+
+  .log-line {
+    display: flex;
+    gap: 12px;
+    padding: 1px 16px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .log-line:hover { background: #131722; }
+
+  .log-line .ts {
+    color: var(--text-faint);
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  .log-line .msg { flex: 1; }
+
+  .log-line.lv-error .msg { color: #ff8b86; }
+  .log-line.lv-warn .msg  { color: var(--warn); }
+  .log-line.lv-ok .msg    { color: var(--ok); }
+  .log-line.lv-cmd .msg   { color: var(--purple); }
+
+  .log-empty {
+    color: var(--text-faint);
+    padding: 40px;
+    text-align: center;
+    font-family: var(--sans);
+    font-size: 13px;
+  }
+
+  /* ---------------- 配置面板 ---------------- */
+
+  .cfg-panel { overflow: hidden; }
+
+  .cfg-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 22px 40px;
+  }
+
+  .cfg-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .cfg-head h2 { font-size: 16px; font-weight: 600; }
+  .cfg-head p {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    line-height: 1.6;
+  }
+
+  .model-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    gap: 13px;
+  }
+
+  /* ---------------- 分层模型区 ---------------- */
+
+  .tier-section { margin-bottom: 22px; }
+
+  .tier-head {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 10px;
+    user-select: none;
+  }
+
+  .tier-head .t-badge {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    letter-spacing: .3px;
+  }
+
+  .t-badge.router { color: #f0c882; border: 1px solid #6b4d1f; background: #241c0f; }
+  .t-badge.easy { color: #6fd898; border: 1px solid #24513a; background: #0f1f16; }
+  .t-badge.balanced { color: #7fb0ff; border: 1px solid #2d5ba8; background: #0f1723; }
+  .t-badge.strong { color: var(--purple); border: 1px solid #3d2f5c; background: #171226; }
+  .t-badge.none { color: var(--text-dim); border: 1px solid var(--border); background: var(--bg-elev2); }
+
+  .tier-head .t-desc {
+    font-size: 11.5px;
+    color: var(--text-faint);
+  }
+
+  .tier-head .t-count {
+    font-size: 11px;
+    color: var(--text-faint);
+    background: var(--bg-elev2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 1px 8px;
+  }
+
+  .tier-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    gap: 11px;
+    min-height: 8px;
+  }
+
+  /* 拖放手柄与状态 */
+  .card { position: relative; }
+
+  .card .drag-handle {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    cursor: grab;
+    padding: 4px 3px;
+    border-radius: 5px;
+    color: var(--text-faint);
+    line-height: 0;
+  }
+
+  .card .drag-handle:hover { color: var(--text-dim); background: var(--bg-elev2); }
+  .card .drag-handle:active { cursor: grabbing; }
+
+  .card .drag-handle i {
+    display: block;
+    width: 12px;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+  }
+
+  .card[draggable="true"] { cursor: default; }
+
+  .card.dragging {
+    opacity: .45;
+    border-style: dashed;
+    border-color: var(--accent-dim);
+  }
+
+  .card.drag-over-top {
+    box-shadow: 0 -3px 0 0 var(--accent);
+  }
+  .card.drag-over-bottom {
+    box-shadow: 0 3px 0 0 var(--accent);
+  }
+
+  .card .prio {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--text-faint);
+    border: 1px solid var(--border);
+    background: var(--bg-elev2);
+    border-radius: 5px;
+    padding: 1px 6px;
+    flex-shrink: 0;
+  }
+
+  .card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 15px;
+    transition: border-color .15s;
+  }
+
+  .card:hover { border-color: #333c4d; }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 11px;
+  }
+
+  .card-top .name {
+    font-weight: 600;
+    font-size: 14px;
+    font-family: var(--mono);
+    color: var(--text);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tag {
+    font-size: 10.5px;
+    padding: 2px 7px;
+    border-radius: 5px;
+    background: var(--bg-elev2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .tag.vis { color: var(--purple); border-color: #3d2f5c; }
+
+  .kv {
+    display: grid;
+    grid-template-columns: 74px 1fr;
+    gap: 5px 10px;
+    font-size: 12.5px;
+  }
+
+  .kv .k { color: var(--text-faint); }
+  .kv .v {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .card-actions {
+    display: flex;
+    gap: 7px;
+    margin-top: 12px;
+    padding-top: 11px;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  .card-actions .btn { flex: 1; justify-content: center; }
+
+  /* ---------------- 路由模式横幅 ---------------- */
+
+  .route-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 15px;
+    margin-bottom: 15px;
+    border-radius: 9px;
+    border: 1px solid var(--border);
+    background: var(--bg-elev);
+    font-size: 12.5px;
+    color: var(--text-dim);
+  }
+
+  .route-banner .mode-dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 9px var(--ok);
+    flex-shrink: 0;
+  }
+
+  .route-banner b { color: var(--text); font-family: var(--mono); }
+  .route-banner .spacer { flex: 1; }
+
+  .route-banner.forced {
+    border-color: #6b4d1f;
+    background: #241c0f;
+    color: #f0c882;
+  }
+  .route-banner.forced .mode-dot {
+    background: var(--warn);
+    box-shadow: 0 0 9px var(--warn);
+  }
+  .route-banner.forced b { color: #ffd58a; }
+
+  .card.forced {
+    border-color: var(--warn);
+    box-shadow: 0 0 0 1px rgba(229, 161, 58, .35);
+  }
+
+  .tag.forced-tag {
+    color: #ffd58a;
+    border-color: #6b4d1f;
+    background: #241c0f;
+  }
+
+  .settings-box {
+    margin-top: 26px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+
+  .settings-box h3 {
+    font-size: 13.5px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .settings-box .hint {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.65;
+    margin-bottom: 13px;
+  }
+
+  .row {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; }
+
+  .field label {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .field input, .field textarea {
+    padding: 8px 11px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 12.5px;
+    font-family: var(--mono);
+    width: 100%;
+  }
+
+  .field textarea { resize: vertical; min-height: 92px; line-height: 1.55; }
+  .field input:focus, .field textarea:focus {
+    outline: none;
+    border-color: var(--accent-dim);
+  }
+
+  .field .tip { font-size: 11px; color: var(--text-faint); }
+
+  .cb-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    cursor: pointer;
+    user-select: none;
+    padding-top: 4px;
+  }
+
+  .cb-row input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+
+  /* ---------------- 设置页：依赖列表 / 关于 ---------------- */
+
+  .dep-list {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .dep-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 10px 13px;
+    font-size: 12.5px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .dep-item:last-child { border-bottom: none; }
+
+  .dep-item .dname {
+    font-family: var(--mono);
+    color: var(--text);
+    width: 96px;
+    flex-shrink: 0;
+  }
+
+  .dep-item .dver {
+    font-family: var(--mono);
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .dep-item .dver.missing { color: var(--err); }
+
+  .dep-badge {
+    font-size: 10.5px;
+    padding: 2px 7px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+  .dep-badge.ok { color: var(--ok); border-color: #24513a; }
+  .dep-badge.miss { color: var(--err); border-color: #5a2b2b; }
+
+  .dep-item .dmeta {
+    margin-left: auto;
+    color: var(--text-faint);
+    font-family: var(--mono);
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 46%;
+    text-align: right;
+  }
+
+  .update-log {
+    height: 220px;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    overflow-y: auto;
+    background: #0b0d12;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.62;
+    padding: 8px 0 12px;
+  }
+
+  .about-body { font-size: 12.5px; color: var(--text-dim); line-height: 1.75; }
+
+  .about-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .about-brand .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+  }
+  .about-brand b { color: var(--text); font-size: 14px; }
+
+  .about-grid {
+    display: grid;
+    grid-template-columns: 82px 1fr;
+    gap: 5px 12px;
+    margin-top: 12px;
+    font-size: 12px;
+  }
+  .about-grid .k { color: var(--text-faint); }
+  .about-grid .v { font-family: var(--mono); color: var(--text-dim); }
+
+  .about-foot {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-soft);
+    font-size: 11.5px;
+    color: var(--text-faint);
+  }
+
+  /* ---------------- 用量面板 ---------------- */
+
+  .usage-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 15px;
+  }
+
+  .usage-head .usage-total {
+    margin-left: auto;
+    display: flex;
+    gap: 16px;
+    font-size: 11.5px;
+    color: var(--text-faint);
+    white-space: nowrap;
+    padding-top: 2px;
+  }
+
+  .usage-total b {
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+
+  .usage-legend {
+    display: flex;
+    gap: 16px;
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-bottom: 10px;
+  }
+
+  .usage-legend span { display: flex; align-items: center; gap: 6px; }
+
+  .usage-legend .sw {
+    width: 14px; height: 8px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+  .usage-legend .sw.tok { background: var(--accent); }
+  .usage-legend .sw.req { background: var(--purple); }
+
+  .usage-chart { display: flex; flex-direction: column; gap: 11px; }
+
+  .usage-row {
+    display: grid;
+    grid-template-columns: 118px 1fr 86px;
+    gap: 11px;
+    align-items: center;
+  }
+
+  .usage-row .u-name {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .u-bars { display: flex; flex-direction: column; gap: 3px; }
+
+  .u-track {
+    height: 12px;
+    background: var(--bg-elev2);
+    border: 1px solid var(--border-soft);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .u-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width .35s ease;
+  }
+
+  .u-fill.tok { background: linear-gradient(90deg, var(--accent-dim), var(--accent)); }
+  .u-fill.req { background: linear-gradient(90deg, #6a4bb8, var(--purple)); }
+
+  .usage-row .u-val {
+    font-size: 11px;
+    color: var(--text-faint);
+    text-align: right;
+    line-height: 1.4;
+    font-family: var(--mono);
+  }
+  .usage-row .u-val b { color: var(--text-dim); font-weight: 600; }
+
+  .req-list {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .req-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    font-size: 12px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .req-item:last-child { border-bottom: none; }
+
+  .req-item .r-ts {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    flex-shrink: 0;
+    width: 56px;
+  }
+
+  .req-item .r-model {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text);
+    flex-shrink: 0;
+    width: 112px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .req-item .r-q {
+    flex: 1;
+    color: var(--text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .req-item .r-tok {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    flex-shrink: 0;
+  }
+
+  .tier-tag {
+    font-size: 10.5px;
+    padding: 1px 7px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    flex-shrink: 0;
+    width: 66px;
+    text-align: center;
+  }
+  .tier-tag.easy { color: #6fd898; border-color: #24513a; }
+  .tier-tag.balanced { color: #7fb0ff; border-color: #2d5ba8; }
+  .tier-tag.strong { color: var(--purple); border-color: #3d2f5c; }
+  .tier-tag.forced {
+    color: #ffd58a;
+    border-color: #6b4d1f;
+    background: #241c0f;
+  }
+
+  /* ---------------- 弹窗 ---------------- */
+
+  .modal-mask {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.62);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(2px);
+  }
+  .modal-mask.show { display: flex; }
+
+  .modal {
+    width: 620px;
+    max-width: calc(100vw - 40px);
+    max-height: calc(100vh - 60px);
+    overflow-y: auto;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+
+  .modal h3 { font-size: 15px; margin-bottom: 16px; font-weight: 600; }
+
+  .modal .field { margin-bottom: 13px; }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  .err-text {
+    color: var(--err);
+    font-size: 12px;
+    margin-top: 10px;
+    min-height: 16px;
+  }
+
+  /* ---------------- Toast ---------------- */
+
+  .toasts {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    z-index: 200;
+  }
+
+  .toast {
+    padding: 11px 16px;
+    border-radius: 8px;
+    background: var(--bg-elev2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    font-size: 12.5px;
+    max-width: 380px;
+    box-shadow: 0 8px 26px rgba(0,0,0,.45);
+    animation: slideIn .18s ease;
+  }
+
+  .toast.ok { border-left-color: var(--ok); }
+  .toast.err { border-left-color: var(--err); }
+  .toast.warn { border-left-color: var(--warn); }
+
+  @keyframes slideIn {
+    from { transform: translateX(22px); opacity: 0; }
+    to   { transform: translateX(0);     opacity: 1; }
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: #2c3444;
+    border-radius: 6px;
+    border: 2px solid var(--bg);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: #3a4557; }
+</style>
+</head>
+<body>
+
+<!-- ================= 顶栏 ================= -->
+<div class="topbar">
+  <div class="brand">
+    <span class="dot"></span>
+    AI Router
+    <small data-i18n="app.subtitle">Claude Code 智能路由</small>
+  </div>
+
+  <div class="svc-pills">
+    <div class="pill" id="pill-litellm" onclick="switchTab('litellm')">
+      <span class="led"></span> LiteLLM :<span id="port-litellm">4000</span>
+    </div>
+    <div class="pill" id="pill-proxy" onclick="switchTab('proxy')">
+      <span class="led"></span> Proxy :<span id="port-proxy">4001</span>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <button class="btn" id="btn-restart" onclick="restartAll()" data-i18n="top.restart">重启全部</button>
+  <button class="btn primary" id="btn-start" onclick="startAll()" data-i18n="top.startAll">一键启动</button>
+  <button class="btn danger" id="btn-stop" onclick="stopAll()" data-i18n="top.stopAll">全部停止</button>
+  <button class="btn ghost" id="btn-quit" onclick="quitApp()"
+          data-i18n="top.quit" data-i18n-title="top.quitTitle"
+          title="停止全部服务并退出程序">退出</button>
+</div>
+
+<!-- ================= 标签栏 ================= -->
+<div class="tabs">
+  <div class="tab active" data-tab="config" onclick="switchTab('config')" data-i18n="tab.config">模型配置</div>
+  <div class="tab" data-tab="litellm" id="tab-litellm" onclick="switchTab('litellm')">
+    <span class="led"></span><span data-i18n="tab.litellm">LiteLLM 运行</span>
+  </div>
+  <div class="tab" data-tab="proxy" id="tab-proxy" onclick="switchTab('proxy')">
+    <span class="led"></span><span data-i18n="tab.proxy">Router Proxy 运行</span>
+  </div>
+  <div class="tab" data-tab="claude" onclick="switchTab('claude')" data-i18n="tab.claude">Claude Code 接入</div>
+  <div class="tab" data-tab="settings" onclick="switchTab('settings')" data-i18n="tab.settings">设置</div>
+</div>
+
+<!-- ================= 面板 ================= -->
+<div class="panels">
+
+  <!-- ---------- 配置 ---------- -->
+  <div class="panel active" id="panel-config">
+    <div class="cfg-scroll">
+      <div class="cfg-head">
+        <div>
+          <h2 data-i18n="cfg.title">模型列表</h2>
+          <p data-i18n-html="cfg.desc">
+            对应 <code>config.yaml</code> 的 <code>model_list</code>，按调用层级分组展示。
+            拖住右上角 <span style="color:var(--text-dim)">≡</span> 手柄可调整同层内的顺序，
+            <b>顺序即调用优先级</b>（失败切换时按此顺序逐个尝试），保存到 config 后即时生效，无需重启 Proxy。
+            修改模型内容仍需重启 LiteLLM。
+          </p>
+        </div>
+        <button class="btn primary" onclick="openModelModal(null)" data-i18n="cfg.add">+ 新增模型</button>
+      </div>
+
+      <div class="route-banner" id="route-banner">
+        <span class="mode-dot"></span>
+        <span id="route-mode-text" data-i18n="route.smart">智能路由：按任务难度自动选择模型</span>
+        <span class="spacer"></span>
+        <button class="btn sm" id="btn-reset-route" onclick="resetRoute()" style="display:none"
+                data-i18n="route.restore">恢复智能路由</button>
+      </div>
+
+      <div id="tier-container"></div>
+      <div class="model-grid" id="model-grid" style="display:none"></div>
+
+      <div class="settings-box">
+        <h3 data-i18n="gw.title">网关设置</h3>
+        <p class="hint" data-i18n-html="gw.hint">
+          <code>master_key</code> 是 LiteLLM 的访问密钥，必须与 Router Proxy 使用的密钥一致。
+          修改后需重启两个服务。
+        </p>
+        <div class="row">
+          <div class="field" style="flex:2">
+            <label>Master Key</label>
+            <input id="master-key" type="text" spellcheck="false" />
+          </div>
+          <div class="field">
+            <label data-i18n="gw.portLitellm">LiteLLM 端口</label>
+            <input id="cfg-litellm-port" type="text" readonly />
+          </div>
+          <div class="field">
+            <label data-i18n="gw.portProxy">Proxy 端口</label>
+            <input id="cfg-proxy-port" type="text" readonly />
+          </div>
+        </div>
+        <div style="margin-top:13px; display:flex; gap:9px; align-items:center">
+          <button class="btn primary" onclick="saveMasterKey()" data-i18n="gw.save">保存密钥</button>
+          <span id="settings-path" style="font-size:11.5px;color:var(--text-faint);font-family:var(--mono)"></span>
+        </div>
+      </div>
+
+      <div class="settings-box">
+        <div class="usage-head">
+          <div>
+            <h3 data-i18n="usage.title">今日用量</h3>
+            <p class="hint" style="margin-bottom:0" data-i18n-html="usage.hint">
+              数据来自问答日志 <code id="usage-log-path">logs/qa_log.jsonl</code>（每 10 秒自动刷新）
+            </p>
+          </div>
+          <div class="usage-total" id="usage-total"></div>
+          <button class="btn sm" onclick="loadUsage(true)" data-i18n="usage.refresh">刷新</button>
+        </div>
+
+        <div class="usage-chart" id="usage-chart">
+          <div class="log-empty" data-i18n="usage.loading">加载中...</div>
+        </div>
+
+        <h3 style="margin:22px 0 10px" data-i18n="usage.recent">最近 10 条请求</h3>
+        <div class="req-list" id="req-list">
+          <div class="log-empty" data-i18n="usage.loading">加载中...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- LiteLLM ---------- -->
+  <div class="panel log-panel" id="panel-litellm">
+    <div class="log-toolbar">
+      <div class="meta">
+        <span><span class="k" data-i18n="log.status">状态</span> <b id="ll-status">-</b></span>
+        <span><span class="k">PID</span> <b id="ll-pid">-</b></span>
+        <span><span class="k" data-i18n="log.uptime">运行时长</span> <b id="ll-uptime">-</b></span>
+        <span><span class="k" data-i18n="log.health">健康</span> <b id="ll-health">-</b></span>
+      </div>
+      <input class="search" id="ll-search" data-i18n-ph="log.filter"
+             placeholder="过滤日志..." oninput="renderLog('litellm')" />
+      <button class="btn sm" onclick="togglePause('litellm')" id="ll-pause"
+              data-i18n="log.pause">暂停滚动</button>
+      <button class="btn sm" onclick="clearLog('litellm')" data-i18n="log.clear">清空</button>
+      <button class="btn sm" onclick="svcAction('litellm','start')" id="ll-start"
+              data-i18n="log.start">启动</button>
+      <button class="btn sm danger" onclick="svcAction('litellm','stop')" id="ll-stop"
+              data-i18n="log.stop">停止</button>
+    </div>
+    <div class="svc-error" id="ll-error"></div>
+    <div class="log-view" id="log-litellm"></div>
+  </div>
+
+  <!-- ---------- Proxy ---------- -->
+  <div class="panel log-panel" id="panel-proxy">
+    <div class="log-toolbar">
+      <div class="meta">
+        <span><span class="k" data-i18n="log.status">状态</span> <b id="px-status">-</b></span>
+        <span><span class="k">PID</span> <b id="px-pid">-</b></span>
+        <span><span class="k" data-i18n="log.uptime">运行时长</span> <b id="px-uptime">-</b></span>
+        <span><span class="k" data-i18n="log.health">健康</span> <b id="px-health">-</b></span>
+      </div>
+      <input class="search" id="px-search" data-i18n-ph="log.filter"
+             placeholder="过滤日志..." oninput="renderLog('proxy')" />
+      <button class="btn sm" onclick="togglePause('proxy')" id="px-pause"
+              data-i18n="log.pause">暂停滚动</button>
+      <button class="btn sm" onclick="clearLog('proxy')" data-i18n="log.clear">清空</button>
+      <button class="btn sm" onclick="svcAction('proxy','start')" id="px-start"
+              data-i18n="log.start">启动</button>
+      <button class="btn sm danger" onclick="svcAction('proxy','stop')" id="px-stop"
+              data-i18n="log.stop">停止</button>
+    </div>
+    <div class="svc-error" id="px-error"></div>
+    <div class="log-view" id="log-proxy"></div>
+  </div>
+
+  <!-- ---------- Claude Code ---------- -->
+  <div class="panel" id="panel-claude">
+    <div class="cfg-scroll">
+      <div class="cfg-head">
+        <div>
+          <h2 data-i18n="cc.title">Claude Code 接入</h2>
+          <p data-i18n="cc.desc">把下面的配置写入 Claude Code，即可让其请求经过智能路由。</p>
+        </div>
+      </div>
+
+      <div class="settings-box">
+        <h3 data-i18n="cc.opt1">方式一：环境变量</h3>
+        <p class="hint" data-i18n="cc.opt1Hint">在启动 Claude Code 的终端里设置，仅对当前会话生效。</p>
+        <div class="field">
+          <textarea id="cc-env" readonly></textarea>
+        </div>
+        <div style="margin-top:12px; display:flex; gap:9px">
+          <button class="btn primary" onclick="copyEl('cc-env')" data-i18n="cc.copyPs">复制 PowerShell 命令</button>
+        </div>
+      </div>
+
+      <div class="settings-box">
+        <h3 data-i18n="cc.opt2">方式二：settings.json</h3>
+        <p class="hint" data-i18n-html="cc.opt2Hint">
+          写入 <code id="cc-dir">%USERPROFILE%\.claude</code>\settings.json（用户级）
+          或项目内 <code>.claude/settings.json</code>，持久生效。
+        </p>
+        <div class="field">
+          <textarea id="cc-json" readonly style="min-height:150px"></textarea>
+        </div>
+        <div style="margin-top:12px; display:flex; gap:9px">
+          <button class="btn primary" onclick="copyEl('cc-json')" data-i18n="cc.copyJson">复制 JSON</button>
+          <button class="btn" onclick="openClaudeDir()" data-i18n="cc.openDir">打开配置目录</button>
+        </div>
+      </div>
+
+      <div class="settings-box">
+        <h3 data-i18n="cc.overviewTitle">路由逻辑速览</h3>
+        <p class="hint" style="margin-bottom:0" data-i18n-html="cc.overview">
+          请求先经 Router 模型打分（复杂度 / 推理 / 风险），再映射到
+          <code>easy</code> → <code>balanced</code> → <code>strong</code> 三档；
+          同档内按能力（视觉 / 音频）与优先级挑选具体模型，失败时自动升级重试。
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- 设置 ---------- -->
+  <div class="panel" id="panel-settings">
+    <div class="cfg-scroll">
+      <div class="cfg-head">
+        <div>
+          <h2 data-i18n="set.title">设置</h2>
+          <p data-i18n="set.desc">查看运行所需的外部依赖版本，并在需要时一键升级。</p>
+        </div>
+        <button class="btn" onclick="loadDepsVersions(true)" data-i18n="set.refreshVer">刷新版本</button>
+      </div>
+
+      <div class="settings-box">
+        <h3 data-i18n="set.langTitle">界面语言</h3>
+        <p class="hint" data-i18n="set.langHint">
+          仅切换界面文案，不影响路由逻辑；选择会被保存，重开控制台后依然生效。
+        </p>
+        <div style="display:flex; gap:9px; flex-wrap:wrap">
+          <button class="btn" data-lang="zh" onclick="setLang('zh')">中文</button>
+          <button class="btn" data-lang="en" onclick="setLang('en')">English</button>
+        </div>
+      </div>
+
+      <div class="settings-box">
+        <h3 data-i18n="deps.title">外部依赖版本</h3>
+        <p class="hint" data-i18n="deps.hint">
+          显示当前实际运行所用的解释器与依赖版本。升级完成后，需重启
+          LiteLLM / Proxy 才会加载新版本。
+        </p>
+        <div class="dep-list" id="dep-list">
+          <div class="log-empty" data-i18n="usage.loading">加载中...</div>
+        </div>
+        <div style="margin-top:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+          <button class="btn primary" id="btn-update-deps" onclick="updateDeps()"
+                  data-i18n="deps.update">一键更新依赖</button>
+          <span id="update-hint" style="font-size:11.5px;color:var(--text-faint)"></span>
+        </div>
+      </div>
+
+      <div class="settings-box">
+        <h3 data-i18n="upd.title">更新日志</h3>
+        <p class="hint" data-i18n="upd.hint">一键更新的实时输出。</p>
+        <div class="log-view update-log" id="log-update">
+          <div class="log-empty" data-i18n="upd.empty">尚未执行更新</div>
+        </div>
+      </div>
+
+      <div class="settings-box">
+        <h3 data-i18n="about.title">关于我们</h3>
+        <div class="about-body">
+          <div class="about-brand">
+            <span class="dot"></span>
+            <b>AI Router</b>
+            <span style="color:var(--text-faint);font-size:11.5px" data-i18n="app.subtitle">Claude Code 智能路由</span>
+          </div>
+          <p data-i18n="about.desc">
+            把本地 LiteLLM 网关与一个轻量路由模型组合起来：请求先由 Router 模型评估
+            任务难度，再自动切换到合适的上游大模型，在保证质量的同时控制成本。
+          </p>
+          <div class="about-grid">
+            <span class="k" data-i18n="about.version">版本</span><span class="v">v1.0.0</span>
+            <span class="k" data-i18n="about.components">组成</span><span class="v">router.py · proxy.py · gui/</span>
+            <span class="k" data-i18n="about.protocol">接口协议</span><span class="v">Anthropic Messages API</span>
+            <span class="k" data-i18n="about.ports">本地端口</span><span class="v">LiteLLM :4000 / Proxy :4001</span>
+            <span class="k" data-i18n="about.root">程序目录</span><span class="v" id="about-root">-</span>
+            <span class="k" data-i18n="about.updated">最后更新</span><span class="v">2026-10-10</span>
+            <span class="k" data-i18n="about.author">作者</span><span class="v">badfreedom78/lzl</span>
+          </div>
+          <div class="about-foot" data-i18n="about.foot">
+            仅在本机运行，密钥与问答内容均不会外传。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 模型编辑弹窗 ================= -->
+<div class="modal-mask" id="modal-mask">
+  <div class="modal">
+    <h3 id="modal-title">新增模型</h3>
+
+    <input type="hidden" id="m-index" />
+
+    <div class="field">
+      <label data-i18n="m.name">模型别名 (model_name) *</label>
+      <input id="m-name" data-i18n-ph="m.namePh" placeholder="例如 balanced-mid" spellcheck="false" />
+      <span class="tip" data-i18n="m.nameTip">Router 路由时使用的名称，需唯一</span>
+    </div>
+
+    <div class="field">
+      <label data-i18n="m.model">上游模型 (model) *</label>
+      <input id="m-model" data-i18n-ph="m.modelPh" placeholder="例如 anthropic/glm-5.3-flash" spellcheck="false" />
+      <span class="tip" data-i18n="m.modelTip">格式为 provider/model，如 anthropic/、openai/</span>
+    </div>
+
+    <div class="field">
+      <label>API Base</label>
+      <input id="m-base" placeholder="https://.../anthropic/v1/messages" spellcheck="false" />
+    </div>
+
+    <div class="field">
+      <label>API Key</label>
+      <input id="m-key" placeholder="sk-..." spellcheck="false" />
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Temperature</label>
+        <input id="m-temp" data-i18n-ph="m.tempPh" placeholder="留空则不设置" spellcheck="false" />
+      </div>
+      <div class="field">
+        <label>Max Tokens</label>
+        <input id="m-maxtok" data-i18n-ph="m.tempPh" placeholder="留空则不设置" spellcheck="false" />
+      </div>
+    </div>
+
+    <label class="cb-row"><input type="checkbox" id="m-vision" />
+      <span data-i18n="m.vision">支持视觉输入 (supports_vision)</span></label>
+    <label class="cb-row"><input type="checkbox" id="m-audio" />
+      <span data-i18n="m.audio">支持音频输入 (supports_audio_input)</span></label>
+
+    <div class="err-text" id="modal-err"></div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModelModal()" data-i18n="m.cancel">取消</button>
+      <button class="btn primary" onclick="submitModel()" data-i18n="m.save">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+/* ============================================================
+   全局状态
+   ============================================================ */
+
+const state = {
+  tab: "config",
+  models: [],
+  status: null,
+  override: { force_model: null },
+  usage: null,
+  deps: null,
+  updateLines: [],
+  updateSeq: 0,
+  updateStream: null,
+  updatePolling: false,
+  logs: { litellm: [], proxy: [] },
+  seq:  { litellm: 0, proxy: 0 },
+  paused: { litellm: false, proxy: false },
+  streams: {},
+  lang: "zh",
+  lastUpdateStatus: null,
+  claudeDir: "",
+};
+
+/* ============================================================
+   多语言（i18n）
+   ------------------------------------------------------------
+   只切换界面文案。后端日志 / 技术输出不参与翻译。
+   语言保存在后端（gui_settings.json），重开也生效。
+   ============================================================ */
+
+const I18N = {
+  zh: {
+    "app.title": "AI Router 控制台",
+    "app.subtitle": "Claude Code 智能路由",
+
+    "top.restart": "重启全部",
+    "top.startAll": "一键启动",
+    "top.stopAll": "全部停止",
+    "top.quit": "退出",
+    "top.quitTitle": "停止全部服务并退出程序",
+
+    "tab.config": "模型配置",
+    "tab.litellm": "LiteLLM 运行",
+    "tab.proxy": "Router Proxy 运行",
+    "tab.claude": "Claude Code 接入",
+    "tab.settings": "设置",
+
+    "cfg.title": "模型列表",
+    "cfg.desc": "对应 <code>config.yaml</code> 的 <code>model_list</code>，按调用层级分组展示。拖住右上角 <span style=\"color:var(--text-dim)\">≡</span> 手柄可调整同层内的顺序，<b>顺序即调用优先级</b>（失败切换时按此顺序逐个尝试），保存到 config 后即时生效，无需重启 Proxy。修改模型内容仍需重启 LiteLLM。",
+    "cfg.add": "+ 新增模型",
+    "route.smart": "智能路由：按任务难度自动选择模型",
+    "route.restore": "恢复智能路由",
+
+    "gw.title": "网关设置",
+    "gw.hint": "<code>master_key</code> 是 LiteLLM 的访问密钥，必须与 Router Proxy 使用的密钥一致。修改后需重启两个服务。",
+    "gw.portLitellm": "LiteLLM 端口",
+    "gw.portProxy": "Proxy 端口",
+    "gw.save": "保存密钥",
+    "gw.empty": "密钥不能为空",
+    "gw.saved": "密钥已保存，重启两个服务后生效",
+    "gw.saveFailed": "保存失败：%s",
+
+    "usage.title": "今日用量",
+    "usage.hint": "数据来自问答日志 <code id=\"usage-log-path\">logs/qa_log.jsonl</code>（每 10 秒自动刷新）",
+    "usage.refresh": "刷新",
+    "usage.loading": "加载中...",
+    "usage.recent": "最近 10 条请求",
+    "usage.refreshed": "用量已刷新",
+    "usage.refreshFailed": "刷新失败：%s",
+    "usage.empty": "今日暂无用量（发起一次问答后即会统计）",
+    "usage.legendTok": "Token 用量",
+    "usage.legendReq": "请求数",
+    "usage.req": "请求",
+    "usage.times": "次",
+    "usage.none": "暂无请求记录",
+    "usage.barTok": "token 用量 %s",
+    "usage.barReq": "请求数 %s",
+    "usage.inout": "输入 / 输出 tokens",
+
+    "log.status": "状态",
+    "log.uptime": "运行时长",
+    "log.health": "健康",
+    "log.filter": "过滤日志...",
+    "log.pause": "暂停滚动",
+    "log.resume": "恢复滚动",
+    "log.clear": "清空",
+    "log.start": "启动",
+    "log.stop": "停止",
+    "log.noMatch": "没有匹配的日志",
+    "log.empty": "暂无日志输出",
+    "log.clearFailed": "清空失败：%s",
+
+    "st.running": "运行中",
+    "st.stopped": "已停止",
+    "st.ok": "正常",
+    "st.waiting": "等待中",
+    "st.missingDeps": "缺少依赖：%s",
+
+    "svc.starting": "%s 启动中...",
+    "svc.stopping": "%s 停止中...",
+    "svc.started": "%s 已启动",
+    "svc.stopped": "%s 已停止",
+    "svc.failed": "%s 操作失败：%s",
+    "all.starting": "正在启动全部服务...",
+    "all.started": "两个服务均已启动",
+    "all.startFailed": "启动失败：%s",
+    "all.stopping": "正在停止全部服务...",
+    "all.stopped": "已停止全部服务",
+    "all.stopFailed": "停止失败：%s",
+    "all.restarting": "正在重启全部服务...",
+    "all.restarted": "重启完成",
+    "all.restartFailed": "重启失败：%s",
+    "quit.confirmRunning": "将停止所有服务并退出控制台，确定吗？",
+    "quit.confirm": "确定退出控制台吗？",
+    "quit.stopping": "正在停止服务并退出...",
+    "quit.done": "服务已停止，可以关闭窗口了",
+    "quit.farewellTitle": "已安全退出",
+    "quit.farewellBody": "所有服务均已停止，可以关闭此窗口了。",
+
+    "cc.title": "Claude Code 接入",
+    "cc.desc": "把下面的配置写入 Claude Code，即可让其请求经过智能路由。",
+    "cc.opt1": "方式一：环境变量",
+    "cc.opt1Hint": "在启动 Claude Code 的终端里设置，仅对当前会话生效。",
+    "cc.copyPs": "复制 PowerShell 命令",
+    "cc.opt2": "方式二：settings.json",
+    "cc.opt2Hint": "写入 <code id=\"cc-dir\">%USERPROFILE%\\.claude</code>\\settings.json（用户级）或项目内 <code>.claude/settings.json</code>，持久生效。",
+    "cc.copyJson": "复制 JSON",
+    "cc.openDir": "打开配置目录",
+    "cc.overviewTitle": "路由逻辑速览",
+    "cc.overview": "请求先经 Router 模型打分（复杂度 / 推理 / 风险），再映射到 <code>easy</code> → <code>balanced</code> → <code>strong</code> 三档；同档内按能力（视觉 / 音频）与优先级挑选具体模型，失败时自动升级重试。",
+    "cc.openOk": "已打开：%s",
+    "cc.openFailed": "打开失败：%s",
+    "copy.ok": "已复制到剪贴板",
+    "copy.ok2": "已复制",
+
+    "set.title": "设置",
+    "set.desc": "查看运行所需的外部依赖版本，并在需要时一键升级。",
+    "set.refreshVer": "刷新版本",
+    "set.langTitle": "界面语言",
+    "set.langHint": "仅切换界面文案，不影响路由逻辑；选择会被保存，重开控制台后依然生效。",
+    "set.langZh": "中文",
+    "set.langEn": "English",
+
+    "deps.title": "外部依赖版本",
+    "deps.hint": "显示当前实际运行所用的解释器与依赖版本。升级完成后，需重启 LiteLLM / Proxy 才会加载新版本。",
+    "deps.update": "一键更新依赖",
+    "deps.refreshed": "已刷新依赖版本",
+    "deps.loadFailed": "加载失败：%s",
+    "deps.refreshFailed": "刷新失败：%s",
+    "deps.notInstalled": "未安装",
+    "deps.installed": "已安装",
+    "deps.missing": "缺失",
+
+    "upd.title": "更新日志",
+    "upd.hint": "一键更新的实时输出。",
+    "upd.empty": "尚未执行更新",
+    "upd.running": "更新进行中...",
+    "upd.lastOk": "上次更新成功 · ",
+    "upd.lastErr": "上次更新有误 · ",
+    "upd.confirm": "将升级 LiteLLM / FastAPI / Uvicorn / HTTPX / PyYAML 等依赖。\n升级过程需要联网，完成后需重启服务。是否继续？",
+    "upd.started": "已开始更新依赖，请稍候...",
+    "upd.startFailed": "更新失败：%s",
+    "upd.done": "依赖更新完成，重启服务后生效",
+    "upd.doneErr": "更新结束，但存在错误，请查看更新日志",
+
+    "about.title": "关于我们",
+    "about.desc": "把本地 LiteLLM 网关与一个轻量路由模型组合起来：请求先由 Router 模型评估任务难度，再自动切换到合适的上游大模型，在保证质量的同时控制成本。",
+    "about.version": "版本",
+    "about.components": "组成",
+    "about.protocol": "接口协议",
+    "about.ports": "本地端口",
+    "about.root": "程序目录",
+    "about.updated": "最后更新",
+    "about.author": "作者",
+    "about.foot": "仅在本机运行，密钥与问答内容均不会外传。",
+
+    "m.addTitle": "新增模型",
+    "m.editTitle": "编辑模型",
+    "m.name": "模型别名 (model_name) *",
+    "m.namePh": "例如 balanced-mid",
+    "m.nameTip": "Router 路由时使用的名称，需唯一",
+    "m.model": "上游模型 (model) *",
+    "m.modelPh": "例如 anthropic/glm-5.3-flash",
+    "m.modelTip": "格式为 provider/model，如 anthropic/、openai/",
+    "m.tempPh": "留空则不设置",
+    "m.vision": "支持视觉输入 (supports_vision)",
+    "m.audio": "支持音频输入 (supports_audio_input)",
+    "m.cancel": "取消",
+    "m.save": "保存",
+    "m.reqName": "请填写模型别名",
+    "m.reqModel": "请填写上游模型",
+    "m.saved": "模型已保存，重启 LiteLLM 后生效",
+
+    "tier.router": "难度评分模型（两级分类的第二级）",
+    "tier.easy": "简单任务：改错别字、重命名等",
+    "tier.balanced": "中等任务：常规功能开发",
+    "tier.strong": "困难任务：架构设计、并发、高风险",
+    "tier.none": "未分组",
+    "tier.noneDesc": "名称未匹配任何层级前缀，不参与智能路由",
+    "tier.count": "%s 个模型",
+    "tier.empty": "暂无模型，点击右上角新增",
+    "models.loadFailed": "加载失败：%s",
+    "models.notSet": "(未设置)",
+    "models.forced": "强制中",
+    "models.vision": "视觉",
+    "models.audio": "音频",
+    "models.kModel": "模型",
+    "models.kParams": "参数",
+    "models.edit": "编辑",
+    "models.unforce": "取消强制",
+    "models.force": "强制选择",
+    "models.delete": "删除",
+    "models.dragTitle": "拖动调整优先级",
+    "models.prioTitle": "层内调用优先级",
+
+    "order.saved": "优先级已更新（已写入 config.yaml，即时生效）",
+    "order.saveFailed": "排序保存失败：%s",
+    "del.confirm": "确定删除模型「%s」？",
+    "del.done": "已删除，重启 LiteLLM 后生效",
+    "del.failed": "删除失败：%s",
+
+    "route.forced": "强制路由：所有请求固定使用 <b>%s</b>（智能路由已关闭）",
+    "route.forceDone": "已强制使用「%s」，智能路由已关闭",
+    "route.setFailed": "设置失败：%s",
+    "route.resetDone": "已恢复智能路由",
+    "route.resetFailed": "操作失败：%s",
+    "tierTag.forced": "强制",
+  },
+
+  en: {
+    "app.title": "AI Router Console",
+    "app.subtitle": "Smart routing for Claude Code",
+
+    "top.restart": "Restart all",
+    "top.startAll": "Start all",
+    "top.stopAll": "Stop all",
+    "top.quit": "Quit",
+    "top.quitTitle": "Stop all services and quit",
+
+    "tab.config": "Models",
+    "tab.litellm": "LiteLLM",
+    "tab.proxy": "Router Proxy",
+    "tab.claude": "Claude Code",
+    "tab.settings": "Settings",
+
+    "cfg.title": "Model list",
+    "cfg.desc": "Maps to <code>model_list</code> in <code>config.yaml</code>, grouped by routing tier. Drag the <span style=\"color:var(--text-dim)\">≡</span> handle to reorder models within a tier — <b>order is call priority</b> (failover tries them in this order). Changes are written to the config and take effect immediately, no Proxy restart needed. Editing a model's content still requires a LiteLLM restart.",
+    "cfg.add": "+ Add model",
+    "route.smart": "Smart routing: pick a model based on task difficulty",
+    "route.restore": "Restore smart routing",
+
+    "gw.title": "Gateway settings",
+    "gw.hint": "<code>master_key</code> is LiteLLM's access key and must match the key used by Router Proxy. Restart both services after changing it.",
+    "gw.portLitellm": "LiteLLM port",
+    "gw.portProxy": "Proxy port",
+    "gw.save": "Save key",
+    "gw.empty": "Key cannot be empty",
+    "gw.saved": "Key saved. Restart both services to apply.",
+    "gw.saveFailed": "Save failed: %s",
+
+    "usage.title": "Today's usage",
+    "usage.hint": "Sourced from the QA log <code id=\"usage-log-path\">logs/qa_log.jsonl</code> (auto-refreshes every 10s)",
+    "usage.refresh": "Refresh",
+    "usage.loading": "Loading...",
+    "usage.recent": "Latest 10 requests",
+    "usage.refreshed": "Usage refreshed",
+    "usage.refreshFailed": "Refresh failed: %s",
+    "usage.empty": "No usage today (stats appear after your first request)",
+    "usage.legendTok": "Tokens",
+    "usage.legendReq": "Requests",
+    "usage.req": "Requests",
+    "usage.times": "req",
+    "usage.none": "No requests recorded yet",
+    "usage.barTok": "tokens %s",
+    "usage.barReq": "requests %s",
+    "usage.inout": "input / output tokens",
+
+    "log.status": "Status",
+    "log.uptime": "Uptime",
+    "log.health": "Health",
+    "log.filter": "Filter logs...",
+    "log.pause": "Pause scroll",
+    "log.resume": "Resume scroll",
+    "log.clear": "Clear",
+    "log.start": "Start",
+    "log.stop": "Stop",
+    "log.noMatch": "No matching log lines",
+    "log.empty": "No log output yet",
+    "log.clearFailed": "Clear failed: %s",
+
+    "st.running": "Running",
+    "st.stopped": "Stopped",
+    "st.ok": "Healthy",
+    "st.waiting": "Waiting",
+    "st.missingDeps": "Missing dependencies: %s",
+
+    "svc.starting": "%s starting...",
+    "svc.stopping": "%s stopping...",
+    "svc.started": "%s started",
+    "svc.stopped": "%s stopped",
+    "svc.failed": "%s action failed: %s",
+    "all.starting": "Starting all services...",
+    "all.started": "Both services started",
+    "all.startFailed": "Start failed: %s",
+    "all.stopping": "Stopping all services...",
+    "all.stopped": "All services stopped",
+    "all.stopFailed": "Stop failed: %s",
+    "all.restarting": "Restarting all services...",
+    "all.restarted": "Restart complete",
+    "all.restartFailed": "Restart failed: %s",
+    "quit.confirmRunning": "This will stop all services and quit the console. Continue?",
+    "quit.confirm": "Quit the console?",
+    "quit.stopping": "Stopping services and quitting...",
+    "quit.done": "Services stopped. You can close this window now.",
+    "quit.farewellTitle": "Exited safely",
+    "quit.farewellBody": "All services have been stopped. You can close this window now.",
+
+    "cc.title": "Connect Claude Code",
+    "cc.desc": "Apply the configuration below to Claude Code so its requests go through the smart router.",
+    "cc.opt1": "Option 1: Environment variables",
+    "cc.opt1Hint": "Set these in the terminal that launches Claude Code; effective for the current session only.",
+    "cc.copyPs": "Copy PowerShell commands",
+    "cc.opt2": "Option 2: settings.json",
+    "cc.opt2Hint": "Write to <code id=\"cc-dir\">%USERPROFILE%\\.claude</code>\\settings.json (user level) or <code>.claude/settings.json</code> in a project for a persistent setup.",
+    "cc.copyJson": "Copy JSON",
+    "cc.openDir": "Open config folder",
+    "cc.overviewTitle": "Routing overview",
+    "cc.overview": "Requests are first scored by the Router model (complexity / reasoning / risk), then mapped to the <code>easy</code> → <code>balanced</code> → <code>strong</code> tiers. Within a tier the model is chosen by capability (vision / audio) and priority; on failure the router automatically retries with a stronger one.",
+    "cc.openOk": "Opened: %s",
+    "cc.openFailed": "Open failed: %s",
+    "copy.ok": "Copied to clipboard",
+    "copy.ok2": "Copied",
+
+    "set.title": "Settings",
+    "set.desc": "Inspect the external dependency versions and upgrade them in one click.",
+    "set.refreshVer": "Refresh versions",
+    "set.langTitle": "Interface language",
+    "set.langHint": "Switches UI text only; routing logic is unaffected. Your choice is saved and persists across restarts.",
+    "set.langZh": "中文",
+    "set.langEn": "English",
+
+    "deps.title": "External dependency versions",
+    "deps.hint": "Shows the interpreter and dependency versions actually in use. Restart LiteLLM / Proxy after an upgrade to load the new versions.",
+    "deps.update": "Update dependencies",
+    "deps.refreshed": "Dependency versions refreshed",
+    "deps.loadFailed": "Load failed: %s",
+    "deps.refreshFailed": "Refresh failed: %s",
+    "deps.notInstalled": "not installed",
+    "deps.installed": "installed",
+    "deps.missing": "missing",
+
+    "upd.title": "Update log",
+    "upd.hint": "Live output of the dependency update.",
+    "upd.empty": "No update has been run yet",
+    "upd.running": "Update in progress...",
+    "upd.lastOk": "Last update succeeded · ",
+    "upd.lastErr": "Last update had errors · ",
+    "upd.confirm": "This will upgrade LiteLLM / FastAPI / Uvicorn / HTTPX / PyYAML and related packages.\nAn internet connection is required, and services must be restarted afterwards. Continue?",
+    "upd.started": "Dependency update started, please wait...",
+    "upd.startFailed": "Update failed: %s",
+    "upd.done": "Dependencies updated. Restart services to apply.",
+    "upd.doneErr": "Update finished with errors. Check the update log.",
+
+    "about.title": "About",
+    "about.desc": "Combines a local LiteLLM gateway with a lightweight routing model: each request is first assessed for task difficulty, then automatically routed to a suitable upstream model — keeping quality high while controlling cost.",
+    "about.version": "Version",
+    "about.components": "Components",
+    "about.protocol": "Protocol",
+    "about.ports": "Local ports",
+    "about.root": "App folder",
+    "about.updated": "Last updated",
+    "about.author": "Author",
+    "about.foot": "Runs entirely on this machine. Keys and conversation contents never leave your computer.",
+
+    "m.addTitle": "Add model",
+    "m.editTitle": "Edit model",
+    "m.name": "Model alias (model_name) *",
+    "m.namePh": "e.g. balanced-mid",
+    "m.nameTip": "Name used by the router; must be unique",
+    "m.model": "Upstream model (model) *",
+    "m.modelPh": "e.g. anthropic/glm-5.3-flash",
+    "m.modelTip": "Format: provider/model, e.g. anthropic/, openai/",
+    "m.tempPh": "Leave empty to skip",
+    "m.vision": "Supports vision input (supports_vision)",
+    "m.audio": "Supports audio input (supports_audio_input)",
+    "m.cancel": "Cancel",
+    "m.save": "Save",
+    "m.reqName": "Model alias is required",
+    "m.reqModel": "Upstream model is required",
+    "m.saved": "Model saved. Restart LiteLLM to apply.",
+
+    "tier.router": "Difficulty scoring model (stage 2 of the two-stage classifier)",
+    "tier.easy": "Simple tasks: fixing typos, renames, etc.",
+    "tier.balanced": "Medium tasks: everyday feature work",
+    "tier.strong": "Hard tasks: architecture, concurrency, high risk",
+    "tier.none": "Ungrouped",
+    "tier.noneDesc": "Name matched no tier prefix; excluded from smart routing",
+    "tier.count": "%s model(s)",
+    "tier.empty": "No models yet — click Add model at the top right",
+    "models.loadFailed": "Load failed: %s",
+    "models.notSet": "(not set)",
+    "models.forced": "Forced",
+    "models.vision": "Vision",
+    "models.audio": "Audio",
+    "models.kModel": "Model",
+    "models.kParams": "Params",
+    "models.edit": "Edit",
+    "models.unforce": "Unforce",
+    "models.force": "Force select",
+    "models.delete": "Delete",
+    "models.dragTitle": "Drag to change priority",
+    "models.prioTitle": "Call priority within tier",
+
+    "order.saved": "Priority updated (written to config.yaml, effective immediately)",
+    "order.saveFailed": "Failed to save order: %s",
+    "del.confirm": "Delete model \"%s\"?",
+    "del.done": "Deleted. Restart LiteLLM to apply.",
+    "del.failed": "Delete failed: %s",
+
+    "route.forced": "Forced routing: all requests go to <b>%s</b> (smart routing is off)",
+    "route.forceDone": "Now forcing \"%s\"; smart routing is off",
+    "route.setFailed": "Failed to set: %s",
+    "route.resetDone": "Smart routing restored",
+    "route.resetFailed": "Action failed: %s",
+    "tierTag.forced": "Forced",
+  },
+};
+
+/** 取翻译；vars 用于替换 %s 占位符。 */
+function T(key, ...vars) {
+  const pack = I18N[state.lang] || I18N.zh;
+  let s = pack[key];
+  if (s === undefined) s = I18N.zh[key];
+  if (s === undefined) return key;
+  for (const v of vars) s = s.replace("%s", v);
+  return s;
+}
+
+/** 把整棵 DOM 里的 data-i18n* 元素按当前语言刷新一遍。 */
+function applyI18n(root) {
+  const scope = root || document;
+
+  scope.querySelectorAll("[data-i18n]").forEach(el => {
+    el.textContent = T(el.dataset.i18n);
+  });
+  scope.querySelectorAll("[data-i18n-html]").forEach(el => {
+    el.innerHTML = T(el.dataset.i18nHtml);
+  });
+  scope.querySelectorAll("[data-i18n-ph]").forEach(el => {
+    el.placeholder = T(el.dataset.i18nPh);
+  });
+  scope.querySelectorAll("[data-i18n-title]").forEach(el => {
+    el.title = T(el.dataset.i18nTitle);
+  });
+
+  document.documentElement.lang = state.lang === "en" ? "en" : "zh-CN";
+  document.title = T("app.title");
+
+  // 动态渲染区需要按新语言重画
+  paintModels();
+  paintRouteOverrideText();
+  paintUsage(state.usage);
+  paintDeps(state.deps);
+  paintUpdateHint(state.lastUpdateStatus);
+  renderLog("litellm");
+  renderLog("proxy");
+  renderUpdateLog();
+  paintClaudeMeta();
+  syncLangButtons();
+}
+
+/** 语言切换会重建含 id 的内联元素，这里把动态内容补回去。 */
+function paintClaudeMeta() {
+  const dirEl = document.getElementById("cc-dir");
+  if (dirEl && state.claudeDir) dirEl.textContent = state.claudeDir;
+}
+
+/** 高亮当前选中的语言按钮。 */
+function syncLangButtons() {
+  document.querySelectorAll("[data-lang]").forEach(b => {
+    b.classList.toggle("primary", b.dataset.lang === state.lang);
+  });
+}
+
+/** 切换语言：先写后端（持久化），再刷新界面。 */
+async function setLang(lang) {
+  if (lang !== "zh" && lang !== "en") return;
+  state.lang = lang;
+  applyI18n();
+  try {
+    await api("/api/settings/language", {
+      method: "POST",
+      body: JSON.stringify({ language: lang }),
+    });
+  } catch (e) {
+    // 持久化失败不影响本次切换
+    console.error("save language failed", e);
+  }
+}
+
+/* ============================================================
+   工具函数
+   ============================================================ */
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, {
+    headers: { "Content-Type": "application/json" },
+    ...opts,
+  });
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
+  if (!res.ok) {
+    const msg = (data && data.detail) ? data.detail : (data || res.statusText);
+    throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+  }
+  return data;
+}
+
+function toast(msg, kind = "info", ms = 3200) {
+  const box = document.getElementById("toasts");
+  const el = document.createElement("div");
+  el.className = "toast " + kind;
+  el.textContent = msg;
+  box.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = "opacity .25s, transform .25s";
+    el.style.opacity = "0";
+    el.style.transform = "translateX(20px)";
+    setTimeout(() => el.remove(), 260);
+  }, ms);
+}
+
+function fmtUptime(sec) {
+  if (sec === null || sec === undefined) return "-";
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+  ));
+}
+
+/* ============================================================
+   标签切换
+   ============================================================ */
+
+function switchTab(name) {
+  state.tab = name;
+  document.querySelectorAll(".tab").forEach(t => {
+    t.classList.toggle("active", t.dataset.tab === name);
+  });
+  document.querySelectorAll(".panel").forEach(p => {
+    p.classList.toggle("active", p.id === "panel-" + name);
+  });
+  if (name === "litellm" || name === "proxy") {
+    renderLog(name);
+    scrollLog(name, true);
+  }
+  if (name === "settings") {
+    loadDepsVersions(false);
+  }
+  if (name === "config") {
+    loadUsage(false);
+  }
+}
+
+/* ============================================================
+   状态轮询
+   ============================================================ */
+
+async function refreshStatus() {
+  try {
+    const s = await api("/api/status");
+    state.status = s;
+    paintStatus(s);
+  } catch (e) {
+    console.error("status error", e);
+  }
+}
+
+function paintStatus(s) {
+  const map = [
+    { key: "litellm", pill: "pill-litellm", tab: "tab-litellm",
+      st: "ll-status", pid: "ll-pid", up: "ll-uptime", hi: "ll-health",
+      err: "ll-error", port: "port-litellm" },
+    { key: "proxy",   pill: "pill-proxy",   tab: "tab-proxy",
+      st: "px-status", pid: "px-pid", up: "px-uptime", hi: "px-health",
+      err: "px-error", port: "port-proxy" },
+  ];
+
+  for (const m of map) {
+    const d = s[m.key];
+    if (!d) continue;
+    const pill = document.getElementById(m.pill);
+    const tabEl = document.getElementById(m.tab);
+
+    const cls = !d.running ? "down" : (d.healthy ? "up" : "warn");
+    pill.className = "pill " + cls;
+    if (tabEl) tabEl.className = "tab " +
+      (state.tab === m.key ? "active " : "") +
+      (d.running ? "up" : "");
+
+    document.getElementById(m.port).textContent = d.port;
+    document.getElementById(m.st).textContent =
+      d.running ? T("st.running") : T("st.stopped");
+    document.getElementById(m.st).style.color =
+      d.running ? "var(--ok)" : "var(--text-faint)";
+    document.getElementById(m.pid).textContent = d.pid ?? "-";
+    document.getElementById(m.up).textContent = fmtUptime(d.uptime);
+    document.getElementById(m.hi).textContent =
+      d.healthy ? T("st.ok") : (d.running ? T("st.waiting") : "-");
+    document.getElementById(m.hi).style.color =
+      d.healthy ? "var(--ok)" : "var(--warn)";
+
+    // 上次启动 / 运行错误直接显示出来，避免只有一个「已停止」
+    const errEl = document.getElementById(m.err);
+    if (errEl) {
+      const msg = d.last_error || "";
+      errEl.textContent = msg ? "! " + msg : "";
+      errEl.style.display = msg ? "block" : "none";
+    }
+  }
+
+  const anyRunning = s.litellm.running || s.proxy.running;
+  document.getElementById("btn-start").disabled = anyRunning;
+  document.getElementById("btn-stop").disabled = !anyRunning;
+
+  const deps = s.deps;
+  if (deps && !deps.ok) {
+    const missing = [];
+    if (!deps.python) missing.push("Python(fastapi/httpx/uvicorn)");
+    if (!deps.litellm) missing.push("litellm");
+    if (missing.length) {
+      document.getElementById("btn-start").disabled = true;
+      document.getElementById("btn-start").title =
+        T("st.missingDeps", missing.join(", "));
+    }
+  }
+}
+
+/* ============================================================
+   服务控制
+   ============================================================ */
+
+async function svcAction(key, action) {
+  const label = key === "litellm" ? "LiteLLM" : "Router Proxy";
+  toast(T(action === "start" ? "svc.starting" : "svc.stopping", label), "info");
+  try {
+    await api(`/api/service/${key}/${action}`, { method: "POST" });
+    await refreshStatus();
+    toast(T(action === "start" ? "svc.started" : "svc.stopped", label), "ok");
+  } catch (e) {
+    toast(T("svc.failed", label, e.message), "err", 5200);
+  }
+}
+
+async function startAll() {
+  toast(T("all.starting"), "info");
+  document.getElementById("btn-start").disabled = true;
+  try {
+    const r = await api("/api/service/start-all", { method: "POST" });
+    await refreshStatus();
+    const warns = [r.litellm_warning, r.proxy_warning].filter(Boolean);
+    if (warns.length) warns.forEach(w => toast(w, "warn", 5200));
+    else toast(T("all.started"), "ok");
+  } catch (e) {
+    toast(T("all.startFailed", e.message), "err", 5200);
+    refreshStatus();
+  }
+}
+
+async function stopAll() {
+  toast(T("all.stopping"), "info");
+  try {
+    await api("/api/service/stop-all", { method: "POST" });
+    await refreshStatus();
+    toast(T("all.stopped"), "ok");
+  } catch (e) {
+    toast(T("all.stopFailed", e.message), "err", 5200);
+  }
+}
+
+async function restartAll() {
+  toast(T("all.restarting"), "info");
+  document.getElementById("btn-restart").disabled = true;
+  try {
+    await api("/api/service/restart-all", { method: "POST" });
+    await refreshStatus();
+    toast(T("all.restarted"), "ok");
+  } catch (e) {
+    toast(T("all.restartFailed", e.message), "err", 5200);
+  } finally {
+    document.getElementById("btn-restart").disabled = false;
+  }
+}
+
+async function quitApp() {
+  const running = state.status &&
+    (state.status.litellm.running || state.status.proxy.running);
+
+  const msg = running ? T("quit.confirmRunning") : T("quit.confirm");
+  if (!confirm(msg)) return;
+
+  document.getElementById("btn-quit").disabled = true;
+  toast(T("quit.stopping"), "info");
+
+  try {
+    await api("/api/shutdown", { method: "POST" });
+  } catch (e) {
+    // 即便接口失败也继续尝试关窗
+  }
+
+  toast(T("quit.done"), "ok", 6000);
+
+  // 尝试关闭窗口（pywebview / 浏览器均尽量支持）
+  setTimeout(() => {
+    window.close();
+    document.body.innerHTML =
+      '<div style="padding:60px;text-align:center;color:#9aa4b6;' +
+      'font-family:Segoe UI,sans-serif">' +
+      '<h2 style="color:#e6e9ef">' + esc(T("quit.farewellTitle")) + '</h2>' +
+      '<p style="margin-top:12px">' + esc(T("quit.farewellBody")) + '</p>' +
+      '</div>';
+  }, 500);
+}
+
+/* ============================================================
+   日志
+   ============================================================ */
+
+function renderLog(key) {
+  const view = document.getElementById("log-" + key);
+  const filterEl = document.getElementById(key === "litellm" ? "ll-search" : "px-search");
+  const filter = (filterEl?.value || "").toLowerCase();
+
+  const lines = state.logs[key].filter(l =>
+    !filter || l.text.toLowerCase().includes(filter)
+  );
+
+  if (!lines.length) {
+    view.innerHTML = `<div class="log-empty">${
+      state.logs[key].length ? T("log.noMatch") : T("log.empty")
+    }</div>`;
+    return;
+  }
+
+  view.innerHTML = lines.map(l =>
+    `<div class="log-line lv-${l.level}">` +
+      `<span class="ts">${esc(l.ts)}</span>` +
+      `<span class="msg">${esc(l.text)}</span>` +
+    `</div>`
+  ).join("");
+}
+
+function scrollLog(key, force = false) {
+  if (state.paused[key] && !force) return;
+  const view = document.getElementById("log-" + key);
+  view.scrollTop = view.scrollHeight;
+}
+
+function appendLog(key, entry) {
+  state.logs[key].push(entry);
+  if (state.logs[key].length > 4000) state.logs[key].shift();
+  state.seq[key] = entry.seq;
+
+  if (state.tab === key) {
+    renderLog(key);
+    scrollLog(key);
+  }
+}
+
+function togglePause(key) {
+  state.paused[key] = !state.paused[key];
+  const btn = document.getElementById(key === "litellm" ? "ll-pause" : "px-pause");
+  btn.textContent = state.paused[key] ? T("log.resume") : T("log.pause");
+  btn.classList.toggle("primary", state.paused[key]);
+  if (!state.paused[key]) scrollLog(key, true);
+}
+
+async function clearLog(key) {
+  try {
+    await api(`/api/logs/${key}/clear`, { method: "POST" });
+    state.logs[key] = [];
+    state.seq[key] = 0;
+    renderLog(key);
+  } catch (e) {
+    toast(T("log.clearFailed", e.message), "err");
+  }
+}
+
+function subscribeLogs(key) {
+  if (state.streams[key]) state.streams[key].close();
+
+  const es = new EventSource(`/api/logs/${key}/stream?since=${state.seq[key]}`);
+  state.streams[key] = es;
+
+  es.onmessage = (ev) => {
+    try {
+      const entry = JSON.parse(ev.data);
+      // 去重：SSE 重连时会重放历史
+      if (entry.seq <= state.seq[key] && state.seq[key] > 0) return;
+      appendLog(key, entry);
+    } catch (e) {}
+  };
+
+  es.onerror = () => {
+    // EventSource 自带重连，无需手动处理
+  };
+}
+
+/* ============================================================
+   模型配置
+   ============================================================ */
+
+async function loadModels() {
+  try {
+    const r = await api("/api/models");
+    state.models = r.models || [];
+    paintModels();
+  } catch (e) {
+    document.getElementById("tier-container").innerHTML =
+      `<div class="log-empty">${esc(T("models.loadFailed", e.message))}</div>`;
+  }
+}
+
+/* ---- 分层定义 ---- */
+
+const TIER_DEFS = [
+  { key: "router",   label: "Router",  descKey: "tier.router" },
+  { key: "easy",     label: "Easy",    descKey: "tier.easy" },
+  { key: "balanced", label: "Balanced",descKey: "tier.balanced" },
+  { key: "strong",   label: "Strong",  descKey: "tier.strong" },
+  { key: null,       labelKey: "tier.none", descKey: "tier.noneDesc" },
+];
+
+function paintModels() {
+  const box = document.getElementById("tier-container");
+  const legacy = document.getElementById("model-grid");
+  if (!box) return;
+
+  if (!state.models.length) {
+    box.innerHTML = `<div class="log-empty">${esc(T("tier.empty"))}</div>`;
+    return;
+  }
+
+  // 分组（保持 config 内的相对顺序 = 调用优先级）
+  const groups = new Map(TIER_DEFS.map(t => [t.key, []]));
+  for (const m of state.models) {
+    (groups.get(m.tier) || groups.get(null)).push(m);
+  }
+
+  let html = "";
+  for (const def of TIER_DEFS) {
+    const items = groups.get(def.key) || [];
+    if (!def.key && !items.length) continue; // 空的未分组不渲染
+
+    const label = def.labelKey ? T(def.labelKey) : def.label;
+
+    html += `
+      <div class="tier-section" data-tier="${def.key === null ? "" : def.key}">
+        <div class="tier-head">
+          <span class="t-badge ${def.key === null ? "none" : def.key}">${esc(label)}</span>
+          <span class="t-desc">${esc(T(def.descKey))}</span>
+          <span class="t-count">${esc(T("tier.count", items.length))}</span>
+        </div>
+        <div class="tier-list">
+          ${items.map((m, i) => modelCard(m, i + 1)).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  box.innerHTML = html;
+  if (legacy) legacy.style.display = "none";
+  bindDragEvents();
+}
+
+function modelCard(m, prio) {
+  const maskedKey = m.api_key
+    ? m.api_key.slice(0, 8) + "..." + m.api_key.slice(-4)
+    : T("models.notSet");
+
+  const extras = [];
+  if (m.temperature !== null && m.temperature !== undefined)
+    extras.push(`temperature=${m.temperature}`);
+  if (m.max_tokens !== null && m.max_tokens !== undefined)
+    extras.push(`max_tokens=${m.max_tokens}`);
+
+  const forced = !!state.override.force_model &&
+    state.override.force_model === m.model_name;
+
+  return `
+    <div class="card ${forced ? "forced" : ""}" draggable="true"
+         data-name="${esc(m.model_name)}">
+      <span class="drag-handle" title="${esc(T("models.dragTitle"))}">
+        <i></i><i></i><i></i>
+      </span>
+      <div class="card-top">
+        <span class="name" title="${esc(m.model_name)}">${esc(m.model_name)}</span>
+        <span class="prio" title="${esc(T("models.prioTitle"))}">#${prio}</span>
+        ${forced ? `<span class="tag forced-tag">${esc(T("models.forced"))}</span>` : ""}
+        ${m.supports_vision ? `<span class="tag vis">${esc(T("models.vision"))}</span>` : ""}
+        ${m.supports_audio_input ? `<span class="tag">${esc(T("models.audio"))}</span>` : ""}
+      </div>
+      <div class="kv">
+        <span class="k">${esc(T("models.kModel"))}</span><span class="v" title="${esc(m.model)}">${esc(m.model)}</span>
+        <span class="k">API Base</span><span class="v" title="${esc(m.api_base)}">${esc(m.api_base || "-")}</span>
+        <span class="k">API Key</span><span class="v">${esc(maskedKey)}</span>
+        ${extras.length ? `<span class="k">${esc(T("models.kParams"))}</span><span class="v">${esc(extras.join("  "))}</span>` : ""}
+      </div>
+      <div class="card-actions">
+        <button class="btn sm" onclick="openModelModal(${m.index})">${esc(T("models.edit"))}</button>
+        ${forced
+          ? `<button class="btn sm primary" onclick="resetRoute()">${esc(T("models.unforce"))}</button>`
+          : `<button class="btn sm" onclick="forceModel('${esc(m.model_name)}')">${esc(T("models.force"))}</button>`}
+        <button class="btn sm danger" onclick="deleteModel(${m.index}, '${esc(m.model_name)}')">${esc(T("models.delete"))}</button>
+      </div>
+    </div>
+  `;
+}
+
+/* ---- 拖放排序 ---- */
+
+const drag = { name: null, card: null };
+
+function bindDragEvents() {
+  document.querySelectorAll("#tier-container .card[draggable]").forEach(card => {
+
+    card.addEventListener("dragstart", (e) => {
+      drag.name = card.dataset.name;
+      drag.card = card;
+      card.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      try {
+        e.dataTransfer.setData("text/plain", drag.name);
+      } catch (err) {}
+    });
+
+    card.addEventListener("dragend", () => {
+      card.classList.remove("dragging");
+      document.querySelectorAll(".drag-over-top,.drag-over-bottom")
+        .forEach(el => el.classList.remove("drag-over-top", "drag-over-bottom"));
+      drag.name = null;
+      drag.card = null;
+    });
+
+    card.addEventListener("dragover", (e) => {
+      if (!drag.card || drag.card === card) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+
+      const rect = card.getBoundingClientRect();
+      const before = (e.clientY - rect.top) < rect.height / 2;
+
+      card.classList.toggle("drag-over-top", before);
+      card.classList.toggle("drag-over-bottom", !before);
+    });
+
+    card.addEventListener("dragleave", () => {
+      card.classList.remove("drag-over-top", "drag-over-bottom");
+    });
+
+    card.addEventListener("drop", (e) => {
+      e.preventDefault();
+      if (!drag.name || !drag.card || drag.card === card) return;
+
+      const rect = card.getBoundingClientRect();
+      const before = (e.clientY - rect.top) < rect.height / 2;
+
+      const targetName = card.dataset.name;
+      moveModelBefore(drag.name, targetName, before);
+    });
+  });
+
+  // 空白处/层末尾也可以放：拖到层容器空白区域 = 放到该层末尾
+  document.querySelectorAll("#tier-container .tier-list").forEach(list => {
+    list.addEventListener("dragover", (e) => {
+      // 只有当事件目标不是卡片时才处理（卡片有自己的 drop）
+      if (e.target.closest(".card")) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    });
+    list.addEventListener("drop", (e) => {
+      if (e.target.closest(".card")) return;
+      e.preventDefault();
+      if (!drag.name) return;
+
+      const section = list.closest(".tier-section");
+      const tierKey = section ? section.dataset.tier : "";
+
+      // 同层拖到空白处 -> 放到该层末尾
+      const sameTier = state.models.find(
+        m => m.model_name === drag.name && m.tier === (tierKey || null)
+      );
+      if (sameTier) moveModelToEnd(drag.name);
+    });
+  });
+}
+
+function currentOrderFromUI() {
+  const names = [];
+  document.querySelectorAll("#tier-container .card").forEach(c => {
+    names.push(c.dataset.name);
+  });
+  return names;
+}
+
+async function persistOrder(newOrder) {
+  try {
+    const r = await api("/api/models/reorder", {
+      method: "POST",
+      body: JSON.stringify({ order: newOrder }),
+    });
+    state.models = r.models || state.models;
+    paintModels();
+    toast(T("order.saved"), "ok");
+  } catch (e) {
+    toast(T("order.saveFailed", e.message), "err", 5200);
+    await loadModels(); // 失败回滚到服务器状态
+  }
+}
+
+function moveModelBefore(name, targetName, before) {
+  const order = currentOrderFromUI();
+  const from = order.indexOf(name);
+  let to = order.indexOf(targetName);
+
+  if (from === -1 || to === -1) return;
+  if (from === to) return;
+
+  // 先移除，再计算目标位置（移除可能改变目标下标）
+  order.splice(from, 1);
+  to = order.indexOf(targetName);
+  const insertAt = before ? to : to + 1;
+
+  order.splice(insertAt, 0, name);
+  persistOrder(order);
+}
+
+function moveModelToEnd(name) {
+  const order = currentOrderFromUI();
+  const from = order.indexOf(name);
+  if (from === -1 || from === order.length - 1) return;
+  order.splice(from, 1);
+  order.push(name);
+  persistOrder(order);
+}
+
+function openModelModal(index) {
+  const mask = document.getElementById("modal-mask");
+  const err = document.getElementById("modal-err");
+  err.textContent = "";
+
+  if (index === null || index === undefined) {
+    document.getElementById("modal-title").textContent = T("m.addTitle");
+    document.getElementById("m-index").value = "";
+    document.getElementById("m-name").value = "";
+    document.getElementById("m-model").value = "";
+    document.getElementById("m-base").value = "";
+    document.getElementById("m-key").value = "";
+    document.getElementById("m-temp").value = "";
+    document.getElementById("m-maxtok").value = "";
+    document.getElementById("m-vision").checked = true;
+    document.getElementById("m-audio").checked = false;
+  } else {
+    const m = state.models.find(x => x.index === index);
+    if (!m) return;
+    document.getElementById("modal-title").textContent = T("m.editTitle");
+    document.getElementById("m-index").value = m.index;
+    document.getElementById("m-name").value = m.model_name;
+    document.getElementById("m-model").value = m.model;
+    document.getElementById("m-base").value = m.api_base || "";
+    document.getElementById("m-key").value = m.api_key || "";
+    document.getElementById("m-temp").value = m.temperature ?? "";
+    document.getElementById("m-maxtok").value = m.max_tokens ?? "";
+    document.getElementById("m-vision").checked = !!m.supports_vision;
+    document.getElementById("m-audio").checked = !!m.supports_audio_input;
+  }
+
+  mask.classList.add("show");
+}
+
+function closeModelModal() {
+  document.getElementById("modal-mask").classList.remove("show");
+}
+
+async function submitModel() {
+  const err = document.getElementById("modal-err");
+  err.textContent = "";
+
+  const idxRaw = document.getElementById("m-index").value;
+
+  const payload = {
+    index: idxRaw === "" ? null : Number(idxRaw),
+    model_name: document.getElementById("m-name").value.trim(),
+    model: document.getElementById("m-model").value.trim(),
+    api_base: document.getElementById("m-base").value.trim(),
+    api_key: document.getElementById("m-key").value.trim(),
+    temperature: document.getElementById("m-temp").value.trim(),
+    max_tokens: document.getElementById("m-maxtok").value.trim(),
+    supports_vision: document.getElementById("m-vision").checked,
+    supports_audio_input: document.getElementById("m-audio").checked,
+  };
+
+  if (!payload.model_name) { err.textContent = T("m.reqName"); return; }
+  if (!payload.model) { err.textContent = T("m.reqModel"); return; }
+
+  try {
+    await api("/api/models", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    closeModelModal();
+    await loadModels();
+    toast(T("m.saved"), "ok", 4200);
+  } catch (e) {
+    err.textContent = e.message;
+  }
+}
+
+async function deleteModel(index, name) {
+  if (!confirm(T("del.confirm", name))) return;
+  try {
+    await api(`/api/models/${index}`, { method: "DELETE" });
+    await loadModels();
+    toast(T("del.done"), "ok", 4200);
+  } catch (e) {
+    toast(T("del.failed", e.message), "err");
+  }
+}
+
+/* ============================================================
+   用量统计（读问答日志）
+   ============================================================ */
+
+function fmtTokens(n) {
+  if (!n) return "0";
+  if (n >= 1000000) return (n / 1000000).toFixed(n >= 10000000 ? 0 : 1) + "M";
+  if (n >= 1000) return (n / 1000).toFixed(n >= 10000 ? 0 : 1) + "k";
+  return String(n);
+}
+
+async function loadUsage(showToast) {
+  try {
+    const r = await api("/api/usage");
+    state.usage = r;
+    paintUsage(r);
+    if (showToast) toast(T("usage.refreshed"), "ok");
+  } catch (e) {
+    if (showToast) toast(T("usage.refreshFailed", e.message), "err");
+  }
+}
+
+function paintUsage(r) {
+  const list = document.getElementById("req-list");
+  const chart = document.getElementById("usage-chart");
+  if (!r) return;
+
+  const pathEl = document.getElementById("usage-log-path");
+  if (pathEl && r.log_path) pathEl.textContent = r.log_path;
+
+  const tot = r.totals || { requests: 0, tokens: 0 };
+  const totalEl = document.getElementById("usage-total");
+  if (totalEl) {
+    totalEl.innerHTML =
+      `<span>${esc(T("usage.req"))} <b>${tot.requests || 0}</b></span>` +
+      `<span>Tokens <b>${fmtTokens(tot.tokens)}</b></span>`;
+  }
+
+  // ---- 条状图：今日各模型 token 用量 / 请求数 ----
+  const today = r.today || [];
+
+  if (!today.length) {
+    chart.innerHTML =
+      `<div class="log-empty">${esc(T("usage.empty"))}</div>`;
+  } else {
+    const maxTok = Math.max(...today.map(d => d.tokens), 1);
+    const maxReq = Math.max(...today.map(d => d.requests), 1);
+
+    chart.innerHTML =
+      `<div class="usage-legend">` +
+        `<span><i class="sw tok"></i>${esc(T("usage.legendTok"))}</span>` +
+        `<span><i class="sw req"></i>${esc(T("usage.legendReq"))}</span>` +
+      `</div>` +
+      today.map(d => {
+        const wTok = d.tokens
+          ? Math.max(3, Math.round(d.tokens / maxTok * 100)) : 0;
+        const wReq = d.requests
+          ? Math.max(3, Math.round(d.requests / maxReq * 100)) : 0;
+
+        return `<div class="usage-row">
+          <span class="u-name" title="${esc(d.model)}">${esc(d.model)}</span>
+          <div class="u-bars">
+            <div class="u-track" title="${esc(T("usage.barTok", d.tokens))}">
+              <div class="u-fill tok" style="width:${wTok}%"></div>
+            </div>
+            <div class="u-track" title="${esc(T("usage.barReq", d.requests))}">
+              <div class="u-fill req" style="width:${wReq}%"></div>
+            </div>
+          </div>
+          <span class="u-val"><b>${fmtTokens(d.tokens)}</b> tok<br><b>${d.requests}</b> ${esc(T("usage.times"))}</span>
+        </div>`;
+      }).join("");
+  }
+
+  // ---- 最近请求列表 ----
+  const recent = r.recent || [];
+
+  if (!recent.length) {
+    list.innerHTML = `<div class="log-empty">${esc(T("usage.none"))}</div>`;
+    return;
+  }
+
+  list.innerHTML = recent.map(x => {
+    const ts = (x.ts || "").slice(11, 19) || (x.ts || "-");
+    const tok = (x.in_tok || x.out_tok)
+      ? `${x.in_tok ?? 0} / ${x.out_tok ?? 0}`
+      : "-";
+
+    return `<div class="req-item">
+      <span class="r-ts">${esc(ts)}</span>
+      <span class="r-model" title="${esc(x.model)}">${esc(x.model)}</span>
+      ${tierTag(x)}
+      <span class="r-q" title="${esc(x.q)}">${esc(x.q || "-")}</span>
+      <span class="r-tok" title="${esc(T("usage.inout"))}">${esc(tok)}</span>
+    </div>`;
+  }).join("");
+}
+
+function tierTag(x) {
+  if (x.forced) return `<span class="tier-tag forced">${esc(T("tierTag.forced"))}</span>`;
+
+  const t = x.tier || "";
+  const cls = ["easy", "balanced", "strong"].includes(t) ? t : "";
+  return `<span class="tier-tag ${cls}">${esc(t || "-")}</span>`;
+}
+
+/* ============================================================
+   强制路由
+   ============================================================ */
+
+async function loadRouteOverride() {
+  try {
+    const r = await api("/api/route-override");
+    state.override = r || { force_model: null };
+  } catch (e) {
+    state.override = { force_model: null };
+  }
+  paintRouteOverrideText();
+  paintModels();
+}
+
+/** 只刷新横幅文案（供语言切换时调用，不重画卡片）。 */
+function paintRouteOverrideText() {
+  const fm = state.override && state.override.force_model;
+  const banner = document.getElementById("route-banner");
+  const text = document.getElementById("route-mode-text");
+  const resetBtn = document.getElementById("btn-reset-route");
+  if (!banner || !text) return;
+
+  if (fm) {
+    banner.classList.add("forced");
+    text.innerHTML = T("route.forced", esc(fm));
+    if (resetBtn) resetBtn.style.display = "";
+  } else {
+    banner.classList.remove("forced");
+    text.textContent = T("route.smart");
+    if (resetBtn) resetBtn.style.display = "none";
+  }
+}
+
+async function forceModel(name) {
+  try {
+    await api("/api/route-override", {
+      method: "POST",
+      body: JSON.stringify({ model: name }),
+    });
+    await loadRouteOverride();
+    toast(T("route.forceDone", name), "ok", 4600);
+  } catch (e) {
+    toast(T("route.setFailed", e.message), "err");
+  }
+}
+
+async function resetRoute() {
+  try {
+    await api("/api/route-override", {
+      method: "POST",
+      body: JSON.stringify({ model: null }),
+    });
+    await loadRouteOverride();
+    toast(T("route.resetDone"), "ok");
+  } catch (e) {
+    toast(T("route.resetFailed", e.message), "err");
+  }
+}
+
+/* ============================================================
+   设置
+   ============================================================ */
+
+async function loadSettings() {
+  try {
+    const s = await api("/api/settings");
+    document.getElementById("master-key").value = s.master_key || "";
+    document.getElementById("cfg-litellm-port").value = s.litellm_port;
+    document.getElementById("cfg-proxy-port").value = s.proxy_port;
+    document.getElementById("settings-path").textContent = s.config_path;
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function saveMasterKey() {
+  const key = document.getElementById("master-key").value.trim();
+  if (!key) { toast(T("gw.empty"), "warn"); return; }
+  try {
+    await api("/api/settings/master-key", {
+      method: "POST",
+      body: JSON.stringify({ master_key: key }),
+    });
+    toast(T("gw.saved"), "ok", 4200);
+  } catch (e) {
+    toast(T("gw.saveFailed", e.message), "err");
+  }
+}
+
+/* ============================================================
+   依赖版本与一键更新
+   ============================================================ */
+
+async function loadDepsVersions(showToast) {
+  const el = document.getElementById("dep-list");
+  try {
+    const d = await api("/api/deps/versions");
+    state.deps = d;
+    paintDeps(d);
+    paintUpdateHint(d.update);
+    if (d.root) {
+      const r = document.getElementById("about-root");
+      if (r) r.textContent = d.root;
+    }
+    if (showToast) toast(T("deps.refreshed"), "ok");
+  } catch (e) {
+    if (el) el.innerHTML = `<div class="log-empty">${esc(T("deps.loadFailed", e.message))}</div>`;
+    if (showToast) toast(T("deps.refreshFailed", e.message), "err");
+  }
+}
+
+function paintDeps(d) {
+  const el = document.getElementById("dep-list");
+  if (!el || !d) return;
+
+  const rows = [];
+
+  rows.push(depRow("Python", d.python_version, d.python_exe, !!d.python_version));
+
+  for (const p of (d.packages || [])) {
+    let meta = "";
+    if (p.key === "litellm" && d.litellm_path) meta = d.litellm_path;
+    rows.push(depRow(p.label, p.version, meta, p.installed));
+  }
+
+  if (d.pip_version) {
+    rows.push(depRow("pip", d.pip_version, "", true));
+  }
+
+  el.innerHTML = rows.join("");
+}
+
+function depRow(name, ver, meta, ok) {
+  return `
+    <div class="dep-item">
+      <span class="dname">${esc(name)}</span>
+      <span class="dver ${ok ? "" : "missing"}">${ver ? esc(ver) : esc(T("deps.notInstalled"))}</span>
+      <span class="dep-badge ${ok ? "ok" : "miss"}">${ok ? esc(T("deps.installed")) : esc(T("deps.missing"))}</span>
+      <span class="dmeta" title="${esc(meta || "")}">${esc(meta || "")}</span>
+    </div>
+  `;
+}
+
+function paintUpdateHint(st) {
+  state.lastUpdateStatus = st || null;
+  const el = document.getElementById("update-hint");
+  if (!el) return;
+  if (!st) { el.textContent = ""; return; }
+  if (st.running) {
+    el.textContent = T("upd.running");
+    el.style.color = "var(--warn)";
+  } else if (st.finished_at) {
+    el.textContent = (st.ok === true ? T("upd.lastOk") : T("upd.lastErr")) + st.finished_at;
+    el.style.color = st.ok === true ? "var(--ok)" : "var(--err)";
+  } else {
+    el.textContent = "";
+  }
+}
+
+async function updateDeps() {
+  const btn = document.getElementById("btn-update-deps");
+  if (!confirm(T("upd.confirm"))) return;
+
+  btn.disabled = true;
+  state.updateLines = [];
+  state.updateSeq = 0;
+  renderUpdateLog();
+
+  try {
+    await api("/api/deps/update", { method: "POST" });
+    toast(T("upd.started"), "info", 4200);
+    subscribeUpdateLog(0);
+    pollUpdateStatus();
+  } catch (e) {
+    toast(T("upd.startFailed", e.message), "err", 5200);
+    btn.disabled = false;
+  }
+}
+
+function subscribeUpdateLog(since) {
+  if (state.updateStream) {
+    try { state.updateStream.close(); } catch (e) {}
+  }
+  const es = new EventSource(`/api/deps/update/stream?since=${since || 0}`);
+  state.updateStream = es;
+
+  es.onmessage = (ev) => {
+    try {
+      const entry = JSON.parse(ev.data);
+      if (entry.seq <= state.updateSeq && state.updateSeq > 0) return;
+      state.updateSeq = entry.seq;
+      state.updateLines.push(entry);
+      if (state.updateLines.length > 2000) state.updateLines.shift();
+      renderUpdateLog();
+    } catch (e) {}
+  };
+}
+
+function renderUpdateLog() {
+  const view = document.getElementById("log-update");
+  if (!view) return;
+  if (!state.updateLines.length) {
+    view.innerHTML = `<div class="log-empty">${esc(T("upd.empty"))}</div>`;
+    return;
+  }
+  view.innerHTML = state.updateLines.map(l =>
+    `<div class="log-line lv-${l.level}">` +
+      `<span class="ts">${esc(l.ts)}</span>` +
+      `<span class="msg">${esc(l.text)}</span>` +
+    `</div>`
+  ).join("");
+  view.scrollTop = view.scrollHeight;
+}
+
+async function loadUpdateHistory() {
+  try {
+    const r = await api("/api/deps/update/logs?since=0");
+    state.updateLines = r.lines || [];
+    if (state.updateLines.length) {
+      state.updateSeq = state.updateLines[state.updateLines.length - 1].seq;
+    }
+    renderUpdateLog();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function pollUpdateStatus() {
+  if (state.updatePolling) return;
+  state.updatePolling = true;
+
+  const tick = async () => {
+    let st = null;
+    try {
+      st = await api("/api/deps/update/status");
+    } catch (e) {
+      state.updatePolling = false;
+      return;
+    }
+
+    paintUpdateHint(st);
+
+    if (st.running) {
+      setTimeout(tick, 1500);
+      return;
+    }
+
+    state.updatePolling = false;
+    const btn = document.getElementById("btn-update-deps");
+    if (btn) btn.disabled = false;
+
+    if (state.updateStream) {
+      try { state.updateStream.close(); } catch (e) {}
+      state.updateStream = null;
+    }
+
+    await loadDepsVersions(false);
+
+    if (st.ok === true) toast(T("upd.done"), "ok", 5200);
+    else if (st.ok === false) toast(T("upd.doneErr"), "warn", 6200);
+  };
+
+  setTimeout(tick, 1500);
+}
+
+/* ============================================================
+   Claude Code
+   ============================================================ */
+
+async function loadClaudeCode() {
+  try {
+    const r = await api("/api/claude-code");
+
+    const ps = Object.entries(r.env)
+      .map(([k, v]) => `$env:${k}="${v}"`)
+      .join("\n");
+    document.getElementById("cc-env").value = ps;
+    document.getElementById("cc-json").value = r.settings_json;
+
+    if (r.claude_dir) {
+      state.claudeDir = r.claude_dir;
+      paintClaudeMeta();
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function copyEl(id) {
+  const el = document.getElementById(id);
+  try {
+    await navigator.clipboard.writeText(el.value);
+    toast(T("copy.ok"), "ok");
+  } catch (e) {
+    el.select();
+    document.execCommand("copy");
+    toast(T("copy.ok2"), "ok");
+  }
+}
+
+async function openClaudeDir() {
+  try {
+    const r = await api("/api/open-claude-dir", { method: "POST" });
+    toast(T("cc.openOk", r.path), "ok");
+  } catch (e) {
+    toast(T("cc.openFailed", e.message), "err", 5200);
+  }
+}
+
+/* ============================================================
+   初始化
+   ============================================================ */
+
+async function boot() {
+  // 先确定界面语言再渲染，避免中英文闪烁
+  try {
+    const r = await api("/api/settings/language");
+    state.lang = (r && r.language) === "en" ? "en" : "zh";
+  } catch (e) {
+    state.lang = "zh";
+  }
+  applyI18n();
+
+  await Promise.all([
+    refreshStatus(),
+    loadSettings(),
+    loadClaudeCode(),
+    loadLogHistory("litellm"),
+    loadLogHistory("proxy"),
+  ]);
+
+  // 先取强制路由状态，再渲染模型卡片，保证「强制中」高亮正确
+  await loadRouteOverride();
+  await loadModels();
+
+  // 模型配置页底部的用量面板（读问答日志）
+  await loadUsage(false);
+  setInterval(() => {
+    if (state.tab === "config") loadUsage(false);
+  }, 10000);
+
+  // 设置页：依赖版本 + 更新日志（若上次更新仍在跑则自动接上）
+  await loadDepsVersions(false);
+  await loadUpdateHistory();
+  try {
+    const st = await api("/api/deps/update/status");
+    if (st && st.running) {
+      const btn = document.getElementById("btn-update-deps");
+      if (btn) btn.disabled = true;
+      subscribeUpdateLog(state.updateSeq);
+      pollUpdateStatus();
+    }
+  } catch (e) {
+    // 忽略：不影响其它功能
+  }
+
+  subscribeLogs("litellm");
+  subscribeLogs("proxy");
+
+  // 状态轮询：2 秒
+  setInterval(refreshStatus, 2000);
+
+  document.getElementById("modal-mask").addEventListener("click", (e) => {
+    if (e.target.id === "modal-mask") closeModelModal();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeModelModal();
+  });
+
+  // 关窗兜底：服务仍在运行时，用同步请求尽力通知后端停止。
+  // 原生窗口（pywebview）关闭时也会触发主进程的 cleanup()，
+  // 这里是浏览器模式下的第二道保险。
+  window.addEventListener("beforeunload", (e) => {
+    const running = state.status &&
+      (state.status.litellm.running || state.status.proxy.running);
+    if (!running) return;
+
+    try {
+      navigator.sendBeacon("/api/shutdown");
+    } catch (err) {
+      // 忽略：主进程 atexit / 信号处理器仍会兜底
+    }
+  });
+}
+
+async function loadLogHistory(key) {
+  try {
+    const r = await api(`/api/logs/${key}?since=0`);
+    state.logs[key] = r.lines || [];
+    if (state.logs[key].length) {
+      state.seq[key] = state.logs[key][state.logs[key].length - 1].seq;
+    }
+    renderLog(key);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+boot();
+</script>
+</body>
+</html>

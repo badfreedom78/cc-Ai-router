@@ -1,0 +1,28 @@
+# AI Router 控制台 - 依赖清单
+#
+# 版本约束说明：
+#   - fastapi 0.143 依赖 pydantic>=1.7.4,<3.0.0，故 pydantic 上限锁 2
+#   - litellm[proxy] 自带 fastapi/uvicorn/httpx 依赖，
+#     但显式声明可避免版本漂移导致的启动期不兼容
+#   - pywebview 提供原生窗口；缺失时程序会自动回退到系统浏览器
+
+# --- HTTP 服务层 ---
+fastapi==0.143.0
+uvicorn==0.54.0
+
+# --- 数据校验与序列化 ---
+pydantic>=2.7,<3.0
+pydantic-settings>=2.0,<3.0
+
+# --- HTTP 客户端 ---
+httpx==0.28.1
+
+# --- YAML 配置读写 ---
+PyYAML>=6.0,<7.0
+
+# --- LiteLLM 网关（含 proxy 依赖）---
+litellm[proxy]>=1.104,<2.0
+
+# --- 原生桌面窗口（可选）---
+# 安装失败不影响使用，程序会自动改用系统浏览器
+pywebview>=5.0

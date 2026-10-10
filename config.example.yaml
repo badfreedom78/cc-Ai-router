@@ -1,0 +1,118 @@
+# ============================================================
+# AI Router - 配置文件模板（config.example.yaml）
+#
+# 用法：
+#   1. 把本文件复制为同目录下的 config.yaml
+#      （首次运行.bat 会自动完成这一步）
+#   2. 把下面的 api_base / api_key 换成你自己的真实值
+#
+# 说明：
+#   - 本文件只含占位符，不含任何真实密钥，可安全提交到 GitHub。
+#   - config.yaml 已被 .gitignore 忽略，请把真实密钥只写在 config.yaml 里。
+#   - 本文件必须保持纯 ASCII，不要写中文注释：
+#     LiteLLM 在中文 Windows（GBK 默认编码）下解析含中文的 YAML 会崩溃。
+#
+# 字段含义：
+#   model_name : 路由档位名，被程序按前缀识别
+#                （router / router-back / easy / balanced / strong）。
+#                不要随意改名，否则会失去对应的路由语义。
+#   litellm_params.model    : 上游真实模型名，格式为 "<厂商前缀>/<模型名>"。
+#   litellm_params.api_base : 该模型的 Anthropic 兼容接口地址。
+#                             不同厂商的路径可能不同，请按服务商文档填写。
+#   litellm_params.api_key  : 该模型的 API Key。
+#   model_info.supports_vision / supports_audio_input : 该模型能力声明，
+#                             路由时据此挑选能满足「看图 / 听音频」的模型。
+# ============================================================
+
+model_list:
+
+  # ---- Router LLM：负责给任务难度打分，本身也是模型 ----
+  - model_name: router
+    litellm_params:
+      model: anthropic/your-router-model
+      api_base: https://your-api-endpoint.example.com/anthropic/v1/messages
+      api_key: sk-your-key-here
+      temperature: 0
+    model_info:
+      supports_vision: true
+      supports_audio_input: false
+
+  # ---- Router LLM 的备用模型（主 router 失败时自动顶上）----
+  - model_name: router-back
+    litellm_params:
+      model: anthropic/your-router-backup-model
+      api_base: https://your-api-endpoint.example.com/anthropic/v1/messages
+      api_key: sk-your-key-here
+    model_info:
+      supports_vision: true
+      supports_audio_input: false
+
+  # ---- easy 档：简单任务（低延迟、低成本的模型）----
+  - model_name: easy
+    litellm_params:
+      model: anthropic/your-easy-model
+      api_base: https://your-api-endpoint.example.com/anthropic/v1/messages
+      api_key: sk-your-key-here
+    model_info:
+      supports_vision: true
+      supports_audio_input: false
+
+  # ---- easy-com：easy 档的补充候选 ----
+  - model_name: easy-com
+    litellm_params:
+      model: anthropic/your-easy-model-2
+      api_base: https://your-api-endpoint.example.com/anthropic/v1/messages
+      api_key: sk-your-key-here
+    model_info:
+      supports_vision: true
+      supports_audio_input: false
+
+  # ---- balanced 档：中等难度任务（日常主力）----
+  - model_name: balanced
+    litellm_params:
+      model: anthropic/your-balanced-model
+      api_base: https://your-api-endpoint.example.com/anthropic/v1/messages
+      api_key: sk-your-key-here
+    model_info:
+      supports_vision: true
+      supports_audio_input: false
+
+  # ---- balanced-mid：balanced 档中偏强一点的候选 ----
+  - model_name: balanced-mid
+    litellm_params:
+      model: anthropic/your-balanced-mid-model
+      api_base: https://your-api-endpoint.example.com/anthropic/v1/messages
+      api_key: sk-your-key-here
+      max_tokens: 32000
+    model_info:
+      supports_vision: true
+      supports_audio_input: false
+
+  # ---- balanced-weak：balanced 档中较弱、更省成本的候选 ----
+  - model_name: balanced-weak
+    litellm_params:
+      model: anthropic/your-balanced-weak-model
+      api_base: https://your-api-endpoint.example.com/anthropic/v1/messages
+      api_key: sk-your-key-here
+    model_info:
+      supports_vision: false
+      supports_audio_input: false
+
+  # ---- strong 档：高难度 / 高风险任务（最强的模型）----
+  - model_name: strong
+    litellm_params:
+      model: anthropic/your-strong-model
+      api_base: https://your-api-endpoint.example.com/anthropic/v1/messages
+      api_key: sk-your-key-here
+      max_tokens: 32000
+    model_info:
+      supports_vision: true
+      supports_audio_input: false
+
+general_settings:
+  # 本机代理与 LiteLLM 之间的共享密钥，仅在本机使用。
+  # 保持默认即可，无需修改；若修改，请让 proxy 与该值保持一致。
+  master_key: sk-local-router-master-key
+
+litellm_settings:
+  dangerously_allow_non_auth_chat_completion_requests: true
