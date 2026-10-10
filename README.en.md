@@ -172,6 +172,20 @@ The console is a local web UI (default port **5178**) with six tabs:
 - **Settings** — **interface language (中文 / English)**, external dependency versions,
   **one-click dependency update** (with live log), and an **About** box.
 
+### Screenshots
+
+**Models tab** — cards grouped by tier (Router / Easy / Balanced / Strong), each with one-click “Force select”:
+
+![Models tab](docs/screenshot-models-en.png)
+
+**Usage panel** (bottom of the same tab) — bar charts of today's token usage and request count per model, plus the latest 10 requests:
+
+![Usage panel](docs/screenshot-usage-en.png)
+
+**Settings tab** — interface language, external dependency versions with one-click update, and the About box:
+
+![Settings tab](docs/screenshot-settings-en.png)
+
 Your language choice is saved to `gui_settings.json` and persists across restarts.
 Switching language **only affects UI text** — routing logic and backend logs are untouched.
 
@@ -203,8 +217,9 @@ ai-router-release/
 │   ├─ requirements.txt     ← Dependency list
 │   └─ frontend/index.html  ← Console UI (with zh/en dictionaries)
 │
-└─ tests/
-    └─ test_offline.py     ← Offline self-test (45 checks, no network, no LiteLLM)
+├─ tests/
+│   └─ test_offline.py     ← Offline self-test (45 checks, no network, no LiteLLM)
+└─ docs/                   ← Screenshots used by the READMEs
 ```
 
 > The repo also ships `.github/workflows/tests.yml`: every push / PR runs the

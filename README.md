@@ -168,6 +168,20 @@ $env:ANTHROPIC_MODEL = "router"
 - **设置** —— **界面语言切换（中文 / English）**、外部依赖版本查看、
   **一键更新依赖**（带实时日志），以及「关于我们」。
 
+### 界面截图
+
+**模型配置页** —— 按档位（Router / Easy / Balanced / Strong）分组，每张卡片可一键「强制选择」：
+
+![模型配置页](docs/screenshot-models.png)
+
+**用量面板**（同一页底部）—— 今日各模型的 token 用量与请求数条状图，以及最近 10 条请求：
+
+![用量面板](docs/screenshot-usage.png)
+
+**设置页** —— 界面语言、外部依赖版本与一键更新、关于我们：
+
+![设置页](docs/screenshot-settings.png)
+
 界面语言选择会保存到 `gui_settings.json`，重开控制台后依然生效。
 切换语言**只影响界面文案**，不影响路由逻辑与后端日志。
 
@@ -199,8 +213,9 @@ ai-router-release/
 │   ├─ requirements.txt     ← 依赖清单
 │   └─ frontend/index.html  ← 控制台界面（含中英双语字典）
 │
-└─ tests/
-    └─ test_offline.py     ← 离线自测（45 项，不联网、不依赖 LiteLLM）
+├─ tests/
+│   └─ test_offline.py     ← 离线自测（45 项，不联网、不依赖 LiteLLM）
+└─ docs/                   ← 界面截图（README 引用）
 ```
 
 > 仓库另含 `.github/workflows/tests.yml`：每次 push / PR 会在
