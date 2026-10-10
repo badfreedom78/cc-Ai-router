@@ -3,6 +3,7 @@
 [中文](README.md) ｜ **English**
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![tests](https://github.com/badfreedom78/cc-Ai-router/actions/workflows/tests.yml/badge.svg)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)
 
@@ -185,6 +186,7 @@ ai-router-release/
 ├─ config.example.yaml     ← Template with placeholders (safe to commit)
 ├─ config.yaml             ← Your real config (created on first run, gitignored)
 ├─ README.md / README.en.md
+├─ LICENSE                 ← MIT license
 ├─ .gitignore
 │
 ├─ router.py               ← Routing logic: scoring, tier and model selection
@@ -194,13 +196,19 @@ ai-router-release/
 ├─ proxy.py                ← Router Proxy service (:4001)
 ├─ router_prompt.md        ← Router model prompt (English; trim to save tokens)
 │
-└─ gui/
-   ├─ main.py              ← Console entry point (desktop window / browser)
-   ├─ app.py               ← Local HTTP API for the console
-   ├─ backend.py           ← Process orchestration, config I/O, usage aggregation, language
-   ├─ requirements.txt     ← Dependency list
-   └─ frontend/index.html  ← Console UI (with zh/en dictionaries)
+├─ gui/
+│   ├─ main.py              ← Console entry point (desktop window / browser)
+│   ├─ app.py               ← Local HTTP API for the console
+│   ├─ backend.py           ← Process orchestration, config I/O, usage aggregation, language
+│   ├─ requirements.txt     ← Dependency list
+│   └─ frontend/index.html  ← Console UI (with zh/en dictionaries)
+│
+└─ tests/
+    └─ test_offline.py     ← Offline self-test (45 checks, no network, no LiteLLM)
 ```
+
+> The repo also ships `.github/workflows/tests.yml`: every push / PR runs the
+> offline self-test above on Ubuntu and Windows × Python 3.10 / 3.12.
 
 **Created automatically at runtime** (no manual setup needed):
 

@@ -3,6 +3,7 @@
 **中文** ｜ [English](README.en.md)
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![tests](https://github.com/badfreedom78/cc-Ai-router/actions/workflows/tests.yml/badge.svg)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)
 
@@ -181,6 +182,7 @@ ai-router-release/
 ├─ config.example.yaml     ← 配置模板（占位符，可安全提交）
 ├─ config.yaml             ← 你的真实配置（首次运行后生成，已 gitignore）
 ├─ README.md / README.en.md
+├─ LICENSE                 ← MIT 许可证
 ├─ .gitignore
 │
 ├─ router.py               ← 路由逻辑：难度打分、档位与模型选择
@@ -190,13 +192,19 @@ ai-router-release/
 ├─ proxy.py                ← Router Proxy 服务（:4001）
 ├─ router_prompt.md        ← 路由模型的提示词（英文，可自行裁剪以省 token）
 │
-└─ gui/
-   ├─ main.py              ← 控制台入口（桌面窗口 / 浏览器）
-   ├─ app.py               ← 控制台本地 HTTP 接口
-   ├─ backend.py           ← 进程编排、配置读写、用量聚合、语言设置
-   ├─ requirements.txt     ← 依赖清单
-   └─ frontend/index.html  ← 控制台界面（含中英双语字典）
+├─ gui/
+│   ├─ main.py              ← 控制台入口（桌面窗口 / 浏览器）
+│   ├─ app.py               ← 控制台本地 HTTP 接口
+│   ├─ backend.py           ← 进程编排、配置读写、用量聚合、语言设置
+│   ├─ requirements.txt     ← 依赖清单
+│   └─ frontend/index.html  ← 控制台界面（含中英双语字典）
+│
+└─ tests/
+    └─ test_offline.py     ← 离线自测（45 项，不联网、不依赖 LiteLLM）
 ```
+
+> 仓库另含 `.github/workflows/tests.yml`：每次 push / PR 会在
+> Ubuntu 与 Windows × Python 3.10 / 3.12 上自动跑一遍上面的离线自测。
 
 **运行时自动生成**（无需手动创建）：
 
